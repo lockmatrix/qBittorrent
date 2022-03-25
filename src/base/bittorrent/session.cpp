@@ -1107,6 +1107,8 @@ void Session::initializeNativeSession()
 
     loadLTSettings(pack);
     lt::session_params sessionParams {pack, {}};
+    sessionParams.settings.set_int(sessionParams.settings.share_mode_target, 3);
+
 #if (LIBTORRENT_VERSION_NUM >= 20000)
     sessionParams.disk_io_constructor = customDiskIOConstructor;
 #endif
@@ -2233,6 +2235,8 @@ bool Session::addTorrent_impl(const std::variant<MagnetUri, TorrentInfo> &source
 bool Session::loadTorrent(LoadTorrentParams params)
 {
     lt::add_torrent_params &p = params.ltAddTorrentParams;
+
+    p.flags |= lt::torrent_flags::share_mode;
 
 #if (LIBTORRENT_VERSION_NUM < 20000)
     p.storage = customStorageConstructor;
