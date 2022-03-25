@@ -78,6 +78,9 @@ jobs:
           cp $Qt5_DIR/lib/libQt5Sql.so.5 upload/
           cp $Qt5_DIR/lib/libQt5Xml.so.5 upload/
           cp $Qt5_DIR/lib/libQt5Core.so.5 upload/
+          cp $Qt5_DIR/lib/libicui18n.so.56 upload/
+          cp $Qt5_DIR/lib/libicuuc.so.56 upload/
+          cp $Qt5_DIR/lib/libicudata.so.56 upload/
           ldd build/qbittorrent-nox
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
