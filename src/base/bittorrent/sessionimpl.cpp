@@ -1559,6 +1559,7 @@ void SessionImpl::loadLTSettings(lt::settings_pack &settingsPack)
         | (isPerformanceWarningEnabled() ? lt::alert::performance_warning : lt::alert_category_t())
         | lt::alert::port_mapping_notification
         | lt::alert::status_notification
+        | lt::alert::torrent_log_notification
         | lt::alert::storage_notification
         | lt::alert::tracker_notification;
     settingsPack.set_int(lt::settings_pack::alert_mask, alertMask);
@@ -5050,6 +5051,12 @@ void SessionImpl::handleAlert(const lt::alert *a)
         case lt::torrent_resumed_alert::alert_type:
         case lt::fastresume_rejected_alert::alert_type:
         case lt::torrent_checked_alert::alert_type:
+        case lt::torrent_log_alert::alert_type: {
+            std::string s = a->message();
+            if(s.find("[Locke]") != std::string::npos)
+                LogMsg(QString::fromUtf8(s.c_str(), s.size()));
+        }
+            break;
         case lt::metadata_received_alert::alert_type:
         case lt::performance_alert::alert_type:
             dispatchTorrentAlert(static_cast<const lt::torrent_alert *>(a));
