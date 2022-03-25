@@ -1072,6 +1072,7 @@ void Session::initializeNativeSession()
         | lt::alert::peer_notification
         | lt::alert::port_mapping_notification
         | lt::alert::status_notification
+        | lt::alert::torrent_log_notification
         | lt::alert::storage_notification
         | lt::alert::tracker_notification;
     const std::string peerId = lt::generate_fingerprint(PEER_ID, QBT_VERSION_MAJOR, QBT_VERSION_MINOR, QBT_VERSION_BUGFIX, QBT_VERSION_BUILD);
@@ -4678,6 +4679,12 @@ void Session::handleAlert(const lt::alert *a)
         case lt::tracker_warning_alert::alert_type:
         case lt::fastresume_rejected_alert::alert_type:
         case lt::torrent_checked_alert::alert_type:
+        case lt::torrent_log_alert::alert_type: {
+            std::string s = a->message();
+            if(s.find("[Locke]") != std::string::npos)
+                LogMsg(QString::fromUtf8(s.c_str(), s.size()));
+        }
+            break;
         case lt::metadata_received_alert::alert_type:
             dispatchTorrentAlert(a);
             break;
