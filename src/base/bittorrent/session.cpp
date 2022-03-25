@@ -1097,6 +1097,8 @@ void Session::initializeNativeSession()
 
     loadLTSettings(pack);
     lt::session_params sessionParams {pack, {}};
+    sessionParams.settings.set_int(sessionParams.settings.share_mode_target, 3);
+
 #ifdef QBT_USES_LIBTORRENT2
     sessionParams.disk_io_constructor = customDiskIOConstructor;
 #endif
@@ -2257,6 +2259,8 @@ bool Session::addTorrent_impl(const std::variant<MagnetUri, TorrentInfo> &source
 bool Session::loadTorrent(LoadTorrentParams params)
 {
     lt::add_torrent_params &p = params.ltAddTorrentParams;
+
+    p.flags |= lt::torrent_flags::share_mode;
 
 #ifndef QBT_USES_LIBTORRENT2
     p.storage = customStorageConstructor;
