@@ -1,5 +1,7 @@
 name: CI - Windows
-on: [pull_request, push]
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -8,8 +10,6 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix:
-        libt_version: ["2.0.5", "1.2.15"]
 
     env:
       boost_path: "${{ github.workspace }}/../boost"
@@ -77,10 +77,10 @@ jobs:
       - name: Install libtorrent
         run: |
           git clone `
-            --branch v${{ matrix.libt_version }} `
+            --branch my `
             --depth 1 `
             --recurse-submodules `
-            https://github.com/arvidn/libtorrent.git
+            https://github.com/lockmatrix/libtorrent.git
           cd libtorrent
           cmake `
             -B build `
@@ -150,5 +150,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: qBittorrent-CI_Windows-x64_libtorrent-${{ matrix.libt_version }}
+          name: qBittorrent-CI_Windows-x64
           path: upload
