@@ -73,7 +73,7 @@ jobs:
         run: |
           mkdir upload
           cp -r build/qbittorrent-nox upload/
-          chmod +x upload/qbittorrent-nox
+          ldd build/qbittorrent-nox
           cp $Qt5_DIR/lib/libQt5Network.so.5 upload/
           cp $Qt5_DIR/lib/libQt5Sql.so.5 upload/
           cp $Qt5_DIR/lib/libQt5Xml.so.5 upload/
@@ -81,8 +81,7 @@ jobs:
           cp $Qt5_DIR/lib/libicui18n.so.56 upload/
           cp $Qt5_DIR/lib/libicuuc.so.56 upload/
           cp $Qt5_DIR/lib/libicudata.so.56 upload/
-          cp /usr/local/lib/libtorrent-rasterbar.so.10 upload/
-          ldd build/qbittorrent-nox
+          cp /usr/local/lib/x86_64-linux-gnu/libtorrent-rasterbar.so.10 upload/
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
