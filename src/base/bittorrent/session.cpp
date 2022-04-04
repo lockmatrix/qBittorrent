@@ -4503,9 +4503,11 @@ void Session::handleAlert(const lt::alert *a)
         case lt::tracker_warning_alert::alert_type:
         case lt::fastresume_rejected_alert::alert_type:
         case lt::torrent_checked_alert::alert_type:
-        case lt::torrent_log_alert::alert_type:
-            if(a->message().find("[Locke]") != std::string::npos)
-                LogMsg(QString::fromStdString(a->message()));
+        case lt::torrent_log_alert::alert_type: {
+            std::string s = a->message();
+            if(s.find("[Locke]") != std::string::npos)
+                LogMsg(QString::fromUtf8(s.c_str(), s.size()));
+        }
             break;
         case lt::metadata_received_alert::alert_type:
             dispatchTorrentAlert(a);
