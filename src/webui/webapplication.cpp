@@ -1,6 +1,6 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2014  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2014, 2022  Vladimir Golovnev <glassez@yandex.ru>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -65,10 +65,10 @@
 const int MAX_ALLOWED_FILESIZE = 10 * 1024 * 1024;
 const auto C_SID = QByteArrayLiteral("SID"); // name of session id cookie
 
-const QString PATH_PREFIX_ICONS {QStringLiteral("/icons/")};
-const QString WWW_FOLDER {QStringLiteral(":/www")};
-const QString PUBLIC_FOLDER {QStringLiteral("/public")};
-const QString PRIVATE_FOLDER {QStringLiteral("/private")};
+const QString PATH_PREFIX_ICONS = u"/icons/"_qs;
+const QString WWW_FOLDER = u":/www"_qs;
+const QString PUBLIC_FOLDER = u"/public"_qs;
+const QString PRIVATE_FOLDER = u"/private"_qs;
 
 namespace
 {
@@ -93,8 +93,8 @@ namespace
 
     QUrl urlFromHostHeader(const QString &hostHeader)
     {
-        if (!hostHeader.contains(QLatin1String("://")))
-            return {QLatin1String("http://") + hostHeader};
+        if (!hostHeader.contains(u"://"))
+            return {u"http://"_qs + hostHeader};
         return hostHeader;
     }
 
@@ -102,34 +102,26 @@ namespace
     {
         contentType = contentType.toLower();
 
-        if (contentType.startsWith(QLatin1String("image/")))
-            return QLatin1String("private, max-age=604800");  // 1 week
+        if (contentType.startsWith(u"image/"))
+            return u"private, max-age=604800"_qs;  // 1 week
 
         if ((contentType == Http::CONTENT_TYPE_CSS)
             || (contentType == Http::CONTENT_TYPE_JS))
             {
             // short interval in case of program update
-            return QLatin1String("private, max-age=43200");  // 12 hrs
+            return u"private, max-age=43200"_qs;  // 12 hrs
         }
 
-        return QLatin1String("no-store");
+        return u"no-store"_qs;
     }
 }
 
 WebApplication::WebApplication(QObject *parent)
     : QObject(parent)
     , m_cacheID {QString::number(Utils::Random::rand(), 36)}
+    , m_authController {new AuthController(this, this)}
 {
-    registerAPIController(QLatin1String("app"), new AppController(this, this));
-    registerAPIController(QLatin1String("auth"), new AuthController(this, this));
-    registerAPIController(QLatin1String("log"), new LogController(this, this));
-    registerAPIController(QLatin1String("rss"), new RSSController(this, this));
-    registerAPIController(QLatin1String("search"), new SearchController(this, this));
-    registerAPIController(QLatin1String("sync"), new SyncController(this, this));
-    registerAPIController(QLatin1String("torrents"), new TorrentsController(this, this));
-    registerAPIController(QLatin1String("transfer"), new TransferController(this, this));
-
-    declarePublicAPI(QLatin1String("auth/login"));
+    declarePublicAPI(u"auth/login"_qs);
 
     configure();
     connect(Preferences::instance(), &Preferences::changed, this, &WebApplication::configure);
@@ -157,12 +149,9 @@ void WebApplication::sendWebUIFile()
         }
     }
 
-    const QString path
-    {
-        (request().path != QLatin1String("/")
-                ? request().path
-                : QLatin1String("/index.html"))
-    };
+    const QString path = (request().path != u"/")
+        ? request().path
+        : u"/index.html"_qs;
 
     Path localPath = m_rootFolder
                 / Path(session() ? PRIVATE_FOLDER : PUBLIC_FOLDER)
@@ -231,8 +220,8 @@ void WebApplication::translateDocument(QString &data) const
             found = false; // no more translatable strings
         }
 
-        data.replace(QLatin1String("${LANG}"), m_currentLocale.left(2));
-        data.replace(QLatin1String("${CACHEID}"), m_cacheID);
+        data.replace(u"${LANG}"_qs, m_currentLocale.left(2));
+        data.replace(u"${CACHEID}"_qs, m_cacheID);
     }
 }
 
@@ -260,15 +249,22 @@ void WebApplication::doProcessRequest()
         return;
     }
 
-    const QString action = match.captured(QLatin1String("action"));
-    const QString scope = match.captured(QLatin1String("scope"));
-
-    APIController *controller = m_apiControllers.value(scope);
-    if (!controller)
-        throw NotFoundHTTPError();
+    const QString action = match.captured(u"action"_qs);
+    const QString scope = match.captured(u"scope"_qs);
 
     if (!session() && !isPublicAPI(scope, action))
         throw ForbiddenHTTPError();
+
+    APIController *controller = nullptr;
+    if (session())
+        controller = session()->getAPIController(scope);
+    if (!controller)
+    {
+        if (scope == u"auth")
+            controller = m_authController;
+        else
+            throw NotFoundHTTPError();
+    }
 
     DataMap data;
     for (const Http::UploadedFile &torrent : request().files)
@@ -358,22 +354,22 @@ void WebApplication::configure()
     m_isHttpsEnabled = pref->isWebUiHttpsEnabled();
 
     m_prebuiltHeaders.clear();
-    m_prebuiltHeaders.push_back({Http::HEADER_X_XSS_PROTECTION, QLatin1String("1; mode=block")});
-    m_prebuiltHeaders.push_back({Http::HEADER_X_CONTENT_TYPE_OPTIONS, QLatin1String("nosniff")});
+    m_prebuiltHeaders.push_back({Http::HEADER_X_XSS_PROTECTION, u"1; mode=block"_qs});
+    m_prebuiltHeaders.push_back({Http::HEADER_X_CONTENT_TYPE_OPTIONS, u"nosniff"_qs});
 
     if (!m_isAltUIUsed)
-        m_prebuiltHeaders.push_back({Http::HEADER_REFERRER_POLICY, QLatin1String("same-origin")});
+        m_prebuiltHeaders.push_back({Http::HEADER_REFERRER_POLICY, u"same-origin"_qs});
 
     const bool isClickjackingProtectionEnabled = pref->isWebUiClickjackingProtectionEnabled();
     if (isClickjackingProtectionEnabled)
-        m_prebuiltHeaders.push_back({Http::HEADER_X_FRAME_OPTIONS, QLatin1String("SAMEORIGIN")});
+        m_prebuiltHeaders.push_back({Http::HEADER_X_FRAME_OPTIONS, u"SAMEORIGIN"_qs});
 
     const QString contentSecurityPolicy =
         (m_isAltUIUsed
-            ? QLatin1String("")
-            : QLatin1String("default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; object-src 'none'; form-action 'self';"))
-        + (isClickjackingProtectionEnabled ? QLatin1String(" frame-ancestors 'self';") : QLatin1String(""))
-        + (m_isHttpsEnabled ? QLatin1String(" upgrade-insecure-requests;") : QLatin1String(""));
+            ? QString()
+            : u"default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; object-src 'none'; form-action 'self';"_qs)
+        + (isClickjackingProtectionEnabled ? u" frame-ancestors 'self';"_qs : QString())
+        + (m_isHttpsEnabled ? u" upgrade-insecure-requests;"_qs : QString());
     if (!contentSecurityPolicy.isEmpty())
         m_prebuiltHeaders.push_back({Http::HEADER_CONTENT_SECURITY_POLICY, contentSecurityPolicy});
 
@@ -417,14 +413,6 @@ void WebApplication::configure()
     }
 }
 
-void WebApplication::registerAPIController(const QString &scope, APIController *controller)
-{
-    Q_ASSERT(controller);
-    Q_ASSERT(!m_apiControllers.value(scope));
-
-    m_apiControllers[scope] = controller;
-}
-
 void WebApplication::declarePublicAPI(const QString &apiPath)
 {
     m_publicAPIs << apiPath;
@@ -461,7 +449,7 @@ void WebApplication::sendFile(const Path &path)
     file.close();
 
     const QMimeType mimeType = QMimeDatabase().mimeTypeForFileNameAndData(path.data(), data);
-    const bool isTranslatable = mimeType.inherits(QLatin1String("text/plain"));
+    const bool isTranslatable = mimeType.inherits(u"text/plain"_qs);
 
     // Translate the file
     if (isTranslatable)
@@ -533,7 +521,7 @@ void WebApplication::sessionInitialize()
 {
     Q_ASSERT(!m_currentSession);
 
-    const QString sessionId {parseCookie(m_request.headers.value(QLatin1String("cookie"))).value(QString::fromLatin1(C_SID))};
+    const QString sessionId {parseCookie(m_request.headers.value(u"cookie"_qs)).value(QString::fromLatin1(C_SID))};
 
     // TODO: Additional session check
 
@@ -590,7 +578,7 @@ bool WebApplication::isAuthNeeded()
 
 bool WebApplication::isPublicAPI(const QString &scope, const QString &action) const
 {
-    return m_publicAPIs.contains(QString::fromLatin1("%1/%2").arg(scope, action));
+    return m_publicAPIs.contains(u"%1/%2"_qs.arg(scope, action));
 }
 
 void WebApplication::sessionStart()
@@ -610,12 +598,19 @@ void WebApplication::sessionStart()
     });
 
     m_currentSession = new WebSession(generateSid());
+    m_currentSession->registerAPIController<AppController>(u"app"_qs);
+    m_currentSession->registerAPIController<LogController>(u"log"_qs);
+    m_currentSession->registerAPIController<RSSController>(u"rss"_qs);
+    m_currentSession->registerAPIController<SearchController>(u"search"_qs);
+    m_currentSession->registerAPIController<SyncController>(u"sync"_qs);
+    m_currentSession->registerAPIController<TorrentsController>(u"torrents"_qs);
+    m_currentSession->registerAPIController<TransferController>(u"transfer"_qs);
     m_sessions[m_currentSession->id()] = m_currentSession;
 
     QNetworkCookie cookie(C_SID, m_currentSession->id().toUtf8());
     cookie.setHttpOnly(true);
     cookie.setSecure(m_isSecureCookieEnabled && m_isHttpsEnabled);
-    cookie.setPath(QLatin1String("/"));
+    cookie.setPath(u"/"_qs);
     QByteArray cookieRawForm = cookie.toRawForm();
     if (m_isCSRFProtectionEnabled)
         cookieRawForm.append("; SameSite=Strict");
@@ -627,7 +622,7 @@ void WebApplication::sessionEnd()
     Q_ASSERT(m_currentSession);
 
     QNetworkCookie cookie(C_SID);
-    cookie.setPath(QLatin1String("/"));
+    cookie.setPath(u"/"_qs);
     cookie.setExpirationDate(QDateTime::currentDateTime().addDays(-1));
 
     delete m_sessions.take(m_currentSession->id());
@@ -778,12 +773,7 @@ void WebSession::updateTimestamp()
     m_timer.start();
 }
 
-QVariant WebSession::getData(const QString &id) const
+APIController *WebSession::getAPIController(const QString &scope) const
 {
-    return m_data.value(id);
-}
-
-void WebSession::setData(const QString &id, const QVariant &data)
-{
-    m_data[id] = data;
+    return m_apiControllers.value(scope);
 }

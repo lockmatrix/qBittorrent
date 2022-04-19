@@ -39,20 +39,20 @@
 #include "uithememanager.h"
 #include "utils.h"
 
-#define SETTINGS_KEY(name) "AboutDialog/" name
+#define SETTINGS_KEY(name) u"AboutDialog/" name
 
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent)
     , m_ui(new Ui::AboutDialog)
-    , m_storeDialogSize(SETTINGS_KEY("Size"))
+    , m_storeDialogSize(SETTINGS_KEY(u"Size"_qs))
 {
     m_ui->setupUi(this);
     setAttribute(Qt::WA_DeleteOnClose);
 
     // Title
-    m_ui->labelName->setText(QString::fromLatin1("<b><h2>qBittorrent " QBT_VERSION " (%1-bit)</h2></b>").arg(QT_POINTER_SIZE * 8));
+    m_ui->labelName->setText(QStringLiteral("<b><h2>qBittorrent " QBT_VERSION " (%1-bit)</h2></b>").arg(QT_POINTER_SIZE * 8));
 
-    m_ui->logo->setPixmap(Utils::Gui::scaledPixmapSvg(UIThemeManager::instance()->getIconPath(QLatin1String("qbittorrent-tray")), this, 32));
+    m_ui->logo->setPixmap(Utils::Gui::scaledPixmapSvg(UIThemeManager::instance()->getIconPath(u"qbittorrent-tray"_qs), this, 32));
 
     // About
     const QString aboutText =

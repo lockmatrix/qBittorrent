@@ -1,6 +1,8 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2020-2021  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2022  Mike Tzou (Chocobo1)
+ * Copyright (C) 2015, 2019  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2006  Christophe Dumez
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,44 +28,34 @@
  * exception statement from your version.
  */
 
-#include "torrentcontentlayout.h"
+#pragma once
 
-#include "base/utils/fs.h"
+class QString;
 
-namespace
+class Path;
+struct QBtCommandLineParameters;
+
+class IApplication
 {
-    Path removeExtension(const Path &fileName)
-    {
-        Path result = fileName;
-        result.removeExtension();
-        return result;
-    }
-}
+public:
+    virtual ~IApplication() = default;
 
-BitTorrent::TorrentContentLayout BitTorrent::detectContentLayout(const PathList &filePaths)
-{
-    const Path rootFolder = Path::findRootFolder(filePaths);
-    return (rootFolder.isEmpty()
-            ? TorrentContentLayout::NoSubfolder
-            : TorrentContentLayout::Subfolder);
-}
+    // FileLogger properties
+    virtual bool isFileLoggerEnabled() const = 0;
+    virtual void setFileLoggerEnabled(bool value) = 0;
+    virtual Path fileLoggerPath() const = 0;
+    virtual void setFileLoggerPath(const Path &path) = 0;
+    virtual bool isFileLoggerBackup() const = 0;
+    virtual void setFileLoggerBackup(bool value) = 0;
+    virtual bool isFileLoggerDeleteOld() const = 0;
+    virtual void setFileLoggerDeleteOld(bool value) = 0;
+    virtual int fileLoggerMaxSize() const = 0;
+    virtual void setFileLoggerMaxSize(int bytes) = 0;
+    virtual int fileLoggerAge() const = 0;
+    virtual void setFileLoggerAge(int value) = 0;
+    virtual int fileLoggerAgeType() const = 0;
+    virtual void setFileLoggerAgeType(int value) = 0;
 
-void BitTorrent::applyContentLayout(PathList &filePaths, const BitTorrent::TorrentContentLayout contentLayout, const Path &rootFolder)
-{
-    Q_ASSERT(!filePaths.isEmpty());
-
-    switch (contentLayout)
-    {
-    case TorrentContentLayout::Subfolder:
-        if (Path::findRootFolder(filePaths).isEmpty())
-            Path::addRootFolder(filePaths, !rootFolder.isEmpty() ? rootFolder : removeExtension(filePaths.at(0)));
-        break;
-
-    case TorrentContentLayout::NoSubfolder:
-        Path::stripRootFolder(filePaths);
-        break;
-
-    default:
-        break;
-    }
-}
+    virtual int memoryWorkingSetLimit() const = 0;
+    virtual void setMemoryWorkingSetLimit(int size) = 0;
+};

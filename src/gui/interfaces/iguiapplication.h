@@ -1,6 +1,8 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2015  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2022  Mike Tzou (Chocobo1)
+ * Copyright (C) 2015, 2019  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2006  Christophe Dumez
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,40 +30,14 @@
 
 #pragma once
 
-#include <QObject>
-#include <QTimer>
+#include "base/interfaces/iapplication.h"
 
-namespace BitTorrent
+class MainWindow;
+
+class IGUIApplication : public IApplication
 {
-    class Session;
-}
-
-class Statistics : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Statistics)
-
 public:
-    explicit Statistics(BitTorrent::Session *session);
-    ~Statistics();
+    virtual ~IGUIApplication() = default;
 
-    qint64 getAlltimeDL() const;
-    qint64 getAlltimeUL() const;
-
-private slots:
-    void gather();
-
-private:
-    void save() const;
-    void load();
-
-    BitTorrent::Session *m_session;
-    qint64 m_alltimeUL = 0;
-    qint64 m_alltimeDL = 0;
-    qint64 m_sessionUL = 0;
-    qint64 m_sessionDL = 0;
-    mutable qint64 m_lastWrite = 0;
-    mutable bool m_dirty = false;
-
-    QTimer m_timer;
+    virtual QPointer<MainWindow> mainWindow() = 0;
 };

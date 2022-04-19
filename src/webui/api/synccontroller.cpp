@@ -126,8 +126,8 @@ namespace
         map[KEY_TRANSFER_DLRATELIMIT] = session->downloadSpeedLimit();
         map[KEY_TRANSFER_UPRATELIMIT] = session->uploadSpeedLimit();
 
-        const quint64 atd = session->getAlltimeDL();
-        const quint64 atu = session->getAlltimeUL();
+        const qint64 atd = session->getAlltimeDL();
+        const qint64 atu = session->getAlltimeUL();
         map[KEY_TRANSFER_ALLTIME_DL] = atd;
         map[KEY_TRANSFER_ALLTIME_UL] = atu;
         map[KEY_TRANSFER_TOTAL_WASTE_SESSION] = sessionStatus.totalWasted;
@@ -140,10 +140,10 @@ namespace
 
         map[KEY_TRANSFER_WRITE_CACHE_OVERLOAD] = ((sessionStatus.diskWriteQueue > 0) && (sessionStatus.peersCount > 0))
             ? Utils::String::fromDouble((100. * sessionStatus.diskWriteQueue / sessionStatus.peersCount), 2)
-            : QLatin1String("0");
+            : u"0"_qs;
         map[KEY_TRANSFER_READ_CACHE_OVERLOAD] = ((sessionStatus.diskReadQueue > 0) && (sessionStatus.peersCount > 0))
             ? Utils::String::fromDouble((100. * sessionStatus.diskReadQueue / sessionStatus.peersCount), 2)
-            : QLatin1String("0");
+            : u"0"_qs;
 
         map[KEY_TRANSFER_QUEUED_IO_JOBS] = cacheStatus.jobQueueLength;
         map[KEY_TRANSFER_AVERAGE_TIME_QUEUE] = cacheStatus.averageJobTime;
@@ -366,8 +366,8 @@ namespace
     }
 }
 
-SyncController::SyncController(ISessionManager *sessionManager, QObject *parent)
-    : APIController(sessionManager, parent)
+SyncController::SyncController(QObject *parent)
+    : APIController(parent)
 {
     m_freeDiskSpaceThread = new QThread(this);
     m_freeDiskSpaceChecker = new FreeDiskSpaceChecker();
@@ -456,9 +456,6 @@ void SyncController::maindataAction()
 
     QVariantMap data;
 
-    QVariantMap lastResponse = sessionManager()->session()->getData(QLatin1String("syncMainDataLastResponse")).toMap();
-    QVariantMap lastAcceptedResponse = sessionManager()->session()->getData(QLatin1String("syncMainDataLastAcceptedResponse")).toMap();
-
     QVariantHash torrents;
     QHash<QString, QStringList> trackers;
     for (const BitTorrent::Torrent *torrent : asConst(session->torrents()))
@@ -470,8 +467,8 @@ void SyncController::maindataAction()
 
         // Calculated last activity time can differ from actual value by up to 10 seconds (this is a libtorrent issue).
         // So we don't need unnecessary updates of last activity time in response.
-        const auto iterTorrents = lastResponse.find(u"torrents"_qs);
-        if (iterTorrents != lastResponse.end())
+        const auto iterTorrents = m_lastMaindataResponse.find(u"torrents"_qs);
+        if (iterTorrents != m_lastMaindataResponse.end())
         {
             const QVariantHash lastResponseTorrents = iterTorrents->toHash();
             const auto iterID = lastResponseTorrents.find(torrentID.toString());
@@ -504,8 +501,8 @@ void SyncController::maindataAction()
         const BitTorrent::CategoryOptions categoryOptions = session->categoryOptions(categoryName);
         QJsonObject category = categoryOptions.toJSON();
         // adjust it to be compatible with exisitng WebAPI
-        category[QLatin1String("savePath")] = category.take(QLatin1String("save_path"));
-        category.insert(QLatin1String("name"), categoryName);
+        category[u"savePath"_qs] = category.take(u"save_path"_qs);
+        category.insert(u"name"_qs, categoryName);
         categories[categoryName] = category.toVariantMap();
     }
     data[u"categories"_qs] = categories;
@@ -529,11 +526,8 @@ void SyncController::maindataAction()
     serverState[KEY_SYNC_MAINDATA_REFRESH_INTERVAL] = session->refreshInterval();
     data[u"server_state"_qs] = serverState;
 
-    const int acceptedResponseId {params()[u"rid"_qs].toInt()};
-    setResult(QJsonObject::fromVariantMap(generateSyncData(acceptedResponseId, data, lastAcceptedResponse, lastResponse)));
-
-    sessionManager()->session()->setData(QLatin1String("syncMainDataLastResponse"), lastResponse);
-    sessionManager()->session()->setData(QLatin1String("syncMainDataLastAcceptedResponse"), lastAcceptedResponse);
+    const int acceptedResponseId = params()[u"rid"_qs].toInt();
+    setResult(QJsonObject::fromVariantMap(generateSyncData(acceptedResponseId, data, m_lastAcceptedMaindataResponse, m_lastMaindataResponse)));
 }
 
 // GET param:
@@ -541,9 +535,6 @@ void SyncController::maindataAction()
 //   - rid (int): last response id
 void SyncController::torrentPeersAction()
 {
-    auto lastResponse = sessionManager()->session()->getData(QLatin1String("syncTorrentPeersLastResponse")).toMap();
-    auto lastAcceptedResponse = sessionManager()->session()->getData(QLatin1String("syncTorrentPeersLastAcceptedResponse")).toMap();
-
     const auto id = BitTorrent::TorrentID::fromString(params()[u"hash"_qs]);
     const BitTorrent::Torrent *torrent = BitTorrent::Session::instance()->findTorrent(id);
     if (!torrent)
@@ -585,7 +576,7 @@ void SyncController::torrentPeersAction()
             filesForPiece.reserve(filePaths.size());
             for (const Path &filePath : filePaths)
                 filesForPiece.append(filePath.toString());
-            peer.insert(KEY_PEER_FILES, filesForPiece.join(QLatin1Char('\n')));
+            peer.insert(KEY_PEER_FILES, filesForPiece.join(u'\n'));
         }
 
         if (resolvePeerCountries)
@@ -598,11 +589,8 @@ void SyncController::torrentPeersAction()
     }
     data[u"peers"_qs] = peers;
 
-    const int acceptedResponseId {params()[u"rid"_qs].toInt()};
-    setResult(QJsonObject::fromVariantMap(generateSyncData(acceptedResponseId, data, lastAcceptedResponse, lastResponse)));
-
-    sessionManager()->session()->setData(QLatin1String("syncTorrentPeersLastResponse"), lastResponse);
-    sessionManager()->session()->setData(QLatin1String("syncTorrentPeersLastAcceptedResponse"), lastAcceptedResponse);
+    const int acceptedResponseId = params()[u"rid"_qs].toInt();
+    setResult(QJsonObject::fromVariantMap(generateSyncData(acceptedResponseId, data, m_lastAcceptedPeersResponse, m_lastPeersResponse)));
 }
 
 qint64 SyncController::getFreeDiskSpace()

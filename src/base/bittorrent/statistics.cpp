@@ -42,10 +42,6 @@ using namespace BitTorrent;
 Statistics::Statistics(Session *session)
     : QObject(session)
     , m_session(session)
-    , m_sessionUL(0)
-    , m_sessionDL(0)
-    , m_lastWrite(0)
-    , m_dirty(false)
 {
     load();
     connect(&m_timer, &QTimer::timeout, this, &Statistics::gather);
@@ -59,12 +55,12 @@ Statistics::~Statistics()
     save();
 }
 
-quint64 Statistics::getAlltimeDL() const
+qint64 Statistics::getAlltimeDL() const
 {
     return m_alltimeDL + m_sessionDL;
 }
 
-quint64 Statistics::getAlltimeUL() const
+qint64 Statistics::getAlltimeUL() const
 {
     return m_alltimeUL + m_sessionUL;
 }
@@ -93,10 +89,10 @@ void Statistics::save() const
     if (!m_dirty || ((now - m_lastWrite) < SAVE_INTERVAL))
         return;
 
-    SettingsPtr s = Profile::instance()->applicationSettings(QLatin1String("qBittorrent-data"));
+    SettingsPtr s = Profile::instance()->applicationSettings(u"qBittorrent-data"_qs);
     QVariantHash v;
-    v.insert(u"AlltimeDL"_qs, m_alltimeDL + m_sessionDL);
-    v.insert(u"AlltimeUL"_qs, m_alltimeUL + m_sessionUL);
+    v.insert(u"AlltimeDL"_qs, (m_alltimeDL + m_sessionDL));
+    v.insert(u"AlltimeUL"_qs, (m_alltimeUL + m_sessionUL));
     s->setValue(u"Stats/AllStats"_qs, v);
     m_dirty = false;
     m_lastWrite = now;
@@ -104,7 +100,7 @@ void Statistics::save() const
 
 void Statistics::load()
 {
-    const SettingsPtr s = Profile::instance()->applicationSettings(QLatin1String("qBittorrent-data"));
+    const SettingsPtr s = Profile::instance()->applicationSettings(u"qBittorrent-data"_qs);
     const QVariantHash v = s->value(u"Stats/AllStats"_qs).toHash();
 
     m_alltimeDL = v[u"AlltimeDL"_qs].toULongLong();

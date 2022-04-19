@@ -50,6 +50,7 @@ HEADERS += \
     $$PWD/http/types.h \
     $$PWD/iconprovider.h \
     $$PWD/indexrange.h \
+    $$PWD/interfaces/iapplication.h \
     $$PWD/interfaces/istringable.h \
     $$PWD/logger.h \
     $$PWD/net/dnsupdater.h \
@@ -123,7 +124,6 @@ SOURCES += \
     $$PWD/bittorrent/speedmonitor.cpp \
     $$PWD/bittorrent/statistics.cpp \
     $$PWD/bittorrent/torrent.cpp \
-    $$PWD/bittorrent/torrentcontentlayout.cpp \
     $$PWD/bittorrent/torrentcreatorthread.cpp \
     $$PWD/bittorrent/torrentimpl.cpp \
     $$PWD/bittorrent/torrentinfo.cpp \

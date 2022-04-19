@@ -284,18 +284,18 @@ TorrentImpl::TorrentImpl(Session *session, lt::session *nativeSession
         m_filePaths.reserve(filesCount);
         m_indexMap.reserve(filesCount);
         m_filePriorities.reserve(filesCount);
-        const std::shared_ptr<const lt::torrent_info> currentInfo = m_nativeHandle.torrent_file();
-        const lt::file_storage &fileStorage = currentInfo->files();
         const std::vector<lt::download_priority_t> filePriorities =
-                resized(m_ltAddTorrentParams.file_priorities, fileStorage.num_files()
+                resized(m_ltAddTorrentParams.file_priorities, m_ltAddTorrentParams.ti->num_files()
                         , LT::toNative(m_ltAddTorrentParams.file_priorities.empty() ? DownloadPriority::Normal : DownloadPriority::Ignored));
+
         for (int i = 0; i < filesCount; ++i)
         {
             const lt::file_index_t nativeIndex = m_torrentInfo.nativeIndexes().at(i);
             m_indexMap[nativeIndex] = i;
 
-            Path filePath {fileStorage.file_path(nativeIndex)};
-            filePath.removeExtension(QB_EXT);
+            const auto fileIter = m_ltAddTorrentParams.renamed_files.find(nativeIndex);
+            const Path filePath = ((fileIter != m_ltAddTorrentParams.renamed_files.end())
+                        ? Path(fileIter->second).removedExtension(QB_EXT) : m_torrentInfo.filePath(i));
             m_filePaths.append(filePath);
 
             const auto priority = LT::fromNative(filePriorities[LT::toUnderlyingType(nativeIndex)]);
@@ -317,7 +317,7 @@ TorrentImpl::TorrentImpl(Session *session, lt::session *nativeSession
         const Path filepath = filePath(i);
         // Move "unwanted" files back to their original folder
         const Path parentRelPath = filepath.parentPath();
-        if (parentRelPath.filename() == QLatin1String(".unwanted"))
+        if (parentRelPath.filename() == u".unwanted")
         {
             const QString oldName = filepath.filename();
             const Path newRelPath = parentRelPath.parentPath();
@@ -1050,10 +1050,8 @@ QString TorrentImpl::error() const
 
     if (m_nativeStatus.flags & lt::torrent_flags::upload_mode)
     {
-        const QString writeErrorStr = tr("Couldn't write to file.");
-        const QString uploadModeStr = tr("Torrent is now in \"upload only\" mode.");
-        const QString errorMessage = tr("Reason:") + QLatin1Char(' ') + QString::fromLocal8Bit(m_lastFileError.error.message().c_str());
-        return QString::fromLatin1("%1 %2 %3").arg(writeErrorStr, errorMessage, uploadModeStr);
+        return tr("Couldn't write to file. Reason: \"%1\". Torrent is now in \"upload only\" mode.")
+            .arg(QString::fromLocal8Bit(m_lastFileError.error.message().c_str()));
     }
 
     return {};
@@ -1468,28 +1466,32 @@ void TorrentImpl::applyFirstLastPiecePriority(const bool enabled)
 
     // Download first and last pieces first for every file in the torrent
 
-    std::vector<lt::download_priority_t> piecePriorities = nativeHandle().get_piece_priorities();
+    auto piecePriorities = std::vector<lt::download_priority_t>(m_torrentInfo.piecesCount(), LT::toNative(DownloadPriority::Ignored));
 
     // Updating file priorities is an async operation in libtorrent, when we just updated it and immediately query it
     // we might get the old/wrong values, so we rely on `updatedFilePrio` in this case.
-    for (int index = 0; index < m_filePriorities.size(); ++index)
+    for (int fileIndex = 0; fileIndex < m_filePriorities.size(); ++fileIndex)
     {
-        const DownloadPriority filePrio = m_filePriorities[index];
+        const DownloadPriority filePrio = m_filePriorities[fileIndex];
         if (filePrio <= DownloadPriority::Ignored)
             continue;
 
         // Determine the priority to set
-        const DownloadPriority newPrio = enabled ? DownloadPriority::Maximum : filePrio;
-        const auto piecePrio = static_cast<lt::download_priority_t>(static_cast<int>(newPrio));
-        const TorrentInfo::PieceRange extremities = m_torrentInfo.filePieces(index);
+        const lt::download_priority_t piecePrio = LT::toNative(enabled ? DownloadPriority::Maximum : filePrio);
+        const TorrentInfo::PieceRange pieceRange = m_torrentInfo.filePieces(fileIndex);
 
         // worst case: AVI index = 1% of total file size (at the end of the file)
-        const int nNumPieces = std::ceil(fileSize(index) * 0.01 / pieceLength());
-        for (int i = 0; i < nNumPieces; ++i)
+        const int numPieces = std::ceil(fileSize(fileIndex) * 0.01 / pieceLength());
+        for (int i = 0; i < numPieces; ++i)
         {
-            piecePriorities[extremities.first() + i] = piecePrio;
-            piecePriorities[extremities.last() - i] = piecePrio;
+            piecePriorities[pieceRange.first() + i] = piecePrio;
+            piecePriorities[pieceRange.last() - i] = piecePrio;
         }
+
+        const int firstPiece = pieceRange.first() + numPieces;
+        const int lastPiece = pieceRange.last() - numPieces;
+        for (int pieceIndex = firstPiece; pieceIndex <= lastPiece; ++pieceIndex)
+            piecePriorities[pieceIndex] = LT::toNative(filePrio);
     }
 
     m_nativeHandle.prioritize_pieces(piecePriorities);
@@ -1522,11 +1524,10 @@ void TorrentImpl::endReceivedMetadataHandling(const Path &savePath, const PathLi
     {
         const auto nativeIndex = nativeIndexes.at(i);
 
-        Path filePath = fileNames.at(i);
+        const Path filePath = fileNames.at(i);
         p.renamed_files[nativeIndex] = filePath.toString().toStdString();
 
-        filePath.removeExtension(QB_EXT);
-        m_filePaths.append(filePath);
+        m_filePaths.append(filePath.removedExtension(QB_EXT));
 
         const auto priority = LT::fromNative(filePriorities[LT::toUnderlyingType(nativeIndex)]);
         m_filePriorities.append(priority);
@@ -1771,11 +1772,24 @@ void TorrentImpl::handleSaveResumeDataAlert(const lt::save_resume_data_alert *p)
 
         TorrentInfo metadata = TorrentInfo(*m_nativeHandle.torrent_file());
 
-        const auto nativeIndexes = metadata.nativeIndexes();
-        PathList filePaths = metadata.filePaths();
-        applyContentLayout(filePaths, m_contentLayout);
-
         const auto &renamedFiles = m_ltAddTorrentParams.renamed_files;
+        PathList filePaths = metadata.filePaths();
+        if (renamedFiles.empty() && (m_contentLayout != TorrentContentLayout::Original))
+        {
+            const Path originalRootFolder = Path::findRootFolder(filePaths);
+            const auto originalContentLayout = (originalRootFolder.isEmpty()
+                                                ? TorrentContentLayout::NoSubfolder
+                                                : TorrentContentLayout::Subfolder);
+            if (m_contentLayout != originalContentLayout)
+            {
+                if (m_contentLayout == TorrentContentLayout::NoSubfolder)
+                    Path::stripRootFolder(filePaths);
+                else
+                    Path::addRootFolder(filePaths, filePaths.at(0).removedExtension());
+            }
+        }
+
+        const auto nativeIndexes = metadata.nativeIndexes();
         m_indexMap.reserve(filePaths.size());
         for (int i = 0; i < filePaths.size(); ++i)
         {

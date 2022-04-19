@@ -58,8 +58,8 @@ struct ProcessingJob
     QVariantHash articleData;
 };
 
-const QString CONF_FOLDER_NAME {QStringLiteral("rss")};
-const QString RULES_FILE_NAME {QStringLiteral("download_rules.json")};
+const QString CONF_FOLDER_NAME = u"rss"_qs;
+const QString RULES_FILE_NAME = u"download_rules.json"_qs;
 
 namespace
 {
@@ -98,9 +98,9 @@ QString computeSmartFilterRegex(const QStringList &filters)
 }
 
 AutoDownloader::AutoDownloader()
-    : m_storeProcessingEnabled("RSS/AutoDownloader/EnableProcessing", false)
-    , m_storeSmartEpisodeFilter("RSS/AutoDownloader/SmartEpisodeFilter")
-    , m_storeDownloadRepacks("RSS/AutoDownloader/DownloadRepacks")
+    : m_storeProcessingEnabled(u"RSS/AutoDownloader/EnableProcessing"_qs, false)
+    , m_storeSmartEpisodeFilter(u"RSS/AutoDownloader/SmartEpisodeFilter"_qs)
+    , m_storeDownloadRepacks(u"RSS/AutoDownloader/DownloadRepacks"_qs)
     , m_processingTimer(new QTimer(this))
     , m_ioThread(new QThread(this))
 {
@@ -441,8 +441,8 @@ void AutoDownloader::loadRules(const QByteArray &data)
 
 void AutoDownloader::loadRulesLegacy()
 {
-    const SettingsPtr settings = Profile::instance()->applicationSettings(QStringLiteral("qBittorrent-rss"));
-    const QVariantHash rules = settings->value(QStringLiteral("download_rules")).toHash();
+    const SettingsPtr settings = Profile::instance()->applicationSettings(u"qBittorrent-rss"_qs);
+    const QVariantHash rules = settings->value(u"download_rules"_qs).toHash();
     for (const QVariant &ruleVar : rules)
     {
         const auto rule = AutoDownloadRule::fromLegacyDict(ruleVar.toHash());

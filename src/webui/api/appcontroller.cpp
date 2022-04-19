@@ -45,6 +45,7 @@
 
 #include "base/bittorrent/session.h"
 #include "base/global.h"
+#include "base/interfaces/iapplication.h"
 #include "base/net/portforwarder.h"
 #include "base/net/proxyconfigurationmanager.h"
 #include "base/path.h"
@@ -63,7 +64,7 @@
 
 void AppController::webapiVersionAction()
 {
-    setResult(static_cast<QString>(API_VERSION));
+    setResult(API_VERSION.toString());
 }
 
 void AppController::versionAction()
@@ -285,6 +286,8 @@ void AppController::preferencesAction()
 
     // Advanced settings
     // qBitorrent preferences
+    // Physical memory (RAM) usage limit
+    data[u"memory_working_set_limit"_qs] = dynamic_cast<IApplication *>(QCoreApplication::instance())->memoryWorkingSetLimit();
     // Current network interface
     data[u"current_network_interface"_qs] = session->networkInterface();
     // Current network interface address
@@ -637,7 +640,7 @@ void AppController::setPreferencesAction()
         if (pref->getLocale() != locale)
         {
             auto *translator = new QTranslator;
-            if (translator->load(QLatin1String(":/lang/qbittorrent_") + locale))
+            if (translator->load(u":/lang/qbittorrent_"_qs + locale))
             {
                 qDebug("%s locale recognized, using translation.", qUtf8Printable(locale));
             }
@@ -738,6 +741,9 @@ void AppController::setPreferencesAction()
 
     // Advanced settings
     // qBittorrent preferences
+    // Physical memory (RAM) usage limit
+    if (hasKey(u"memory_working_set_limit"_qs))
+        dynamic_cast<IApplication *>(QCoreApplication::instance())->setMemoryWorkingSetLimit(it.value().toInt());
     // Current network interface
     if (hasKey(u"current_network_interface"_qs))
     {

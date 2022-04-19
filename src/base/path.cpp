@@ -37,6 +37,9 @@
 #include <QList>
 #include <QMimeDatabase>
 #include <QRegularExpression>
+#include <QStringView>
+
+#include "base/global.h"
 
 #if defined(Q_OS_WIN)
 const Qt::CaseSensitivity CASE_SENSITIVITY = Qt::CaseInsensitive;
@@ -74,11 +77,11 @@ bool Path::isValid() const
         return false;
 
 #if defined(Q_OS_WIN)
-    const QRegularExpression regex {QLatin1String("[:?\"*<>|]")};
+    const QRegularExpression regex {u"[:?\"*<>|]"_qs};
 #elif defined(Q_OS_MACOS)
-    const QRegularExpression regex {QLatin1String("[\\0:]")};
+    const QRegularExpression regex {u"[\\0:]"_qs};
 #else
-    const QRegularExpression regex {QLatin1String("[\\0]")};
+    const QRegularExpression regex {u"[\\0]"_qs};
 #endif
     return !m_pathStr.contains(regex);
 }
@@ -105,24 +108,24 @@ bool Path::exists() const
 
 Path Path::rootItem() const
 {
-    const int slashIndex = m_pathStr.indexOf(QLatin1Char('/'));
+    const int slashIndex = m_pathStr.indexOf(u'/');
     if (slashIndex < 0)
         return *this;
 
     if (slashIndex == 0) // *nix absolute path
-        return createUnchecked(QLatin1String("/"));
+        return createUnchecked(u"/"_qs);
 
     return createUnchecked(m_pathStr.left(slashIndex));
 }
 
 Path Path::parentPath() const
 {
-    const int slashIndex = m_pathStr.lastIndexOf(QLatin1Char('/'));
+    const int slashIndex = m_pathStr.lastIndexOf(u'/');
     if (slashIndex == -1)
         return {};
 
     if (slashIndex == 0) // *nix absolute path
-        return (m_pathStr.size() == 1) ? Path() : createUnchecked(QLatin1String("/"));
+        return (m_pathStr.size() == 1) ? Path() : createUnchecked(u"/"_qs);
 
     return createUnchecked(m_pathStr.left(slashIndex));
 }
@@ -140,17 +143,17 @@ QString Path::extension() const
 {
     const QString suffix = QMimeDatabase().suffixForFileName(m_pathStr);
     if (!suffix.isEmpty())
-        return (QLatin1String(".") + suffix);
+        return (u"." + suffix);
 
-    const int slashIndex = m_pathStr.lastIndexOf(QLatin1Char('/'));
+    const int slashIndex = m_pathStr.lastIndexOf(u'/');
     const auto filename = QStringView(m_pathStr).mid(slashIndex + 1);
-    const int dotIndex = filename.lastIndexOf(QLatin1Char('.'), -2);
+    const int dotIndex = filename.lastIndexOf(u'.', -2);
     return ((dotIndex == -1) ? QString() : filename.mid(dotIndex).toString());
 }
 
-bool Path::hasExtension(const QString &ext) const
+bool Path::hasExtension(const QStringView ext) const
 {
-    Q_ASSERT(ext.startsWith(QLatin1Char('.')) && (ext.size() >= 2));
+    Q_ASSERT(ext.startsWith(u'.') && (ext.size() >= 2));
 
     return m_pathStr.endsWith(ext, Qt::CaseInsensitive);
 }
@@ -160,7 +163,7 @@ bool Path::hasAncestor(const Path &other) const
     if (other.isEmpty() || (m_pathStr.size() <= other.m_pathStr.size()))
         return false;
 
-    return (m_pathStr[other.m_pathStr.size()] == QLatin1Char('/'))
+    return (m_pathStr[other.m_pathStr.size()] == u'/')
             && m_pathStr.startsWith(other.m_pathStr, CASE_SENSITIVITY);
 }
 
@@ -178,10 +181,20 @@ void Path::removeExtension()
     m_pathStr.chop(extension().size());
 }
 
-void Path::removeExtension(const QString &ext)
+Path Path::removedExtension() const
+{
+    return createUnchecked(m_pathStr.chopped(extension().size()));
+}
+
+void Path::removeExtension(const QStringView ext)
 {
     if (hasExtension(ext))
         m_pathStr.chop(ext.size());
+}
+
+Path Path::removedExtension(const QStringView ext) const
+{
+    return (hasExtension(ext) ? createUnchecked(m_pathStr.chopped(ext.size())) : *this);
 }
 
 QString Path::data() const
@@ -200,15 +213,10 @@ Path &Path::operator/=(const Path &other)
     return *this;
 }
 
-Path &Path::operator+=(const QString &str)
+Path &Path::operator+=(const QStringView str)
 {
     *this = *this + str;
     return *this;
-}
-
-Path &Path::operator+=(const std::string &str)
-{
-    return (*this += QString::fromStdString(str));
 }
 
 Path Path::commonPath(const Path &left, const Path &right)
@@ -300,22 +308,12 @@ Path operator/(const Path &lhs, const Path &rhs)
     if (lhs.isEmpty())
         return rhs;
 
-    return Path(lhs.m_pathStr + QLatin1Char('/') + rhs.m_pathStr);
+    return Path(lhs.m_pathStr + u'/' + rhs.m_pathStr);
 }
 
-Path operator+(const Path &lhs, const QString &rhs)
+Path operator+(const Path &lhs, const QStringView rhs)
 {
-    return Path(lhs.m_pathStr + rhs);
-}
-
-Path operator+(const Path &lhs, const char rhs[])
-{
-    return lhs + QString::fromLatin1(rhs);
-}
-
-Path operator+(const Path &lhs, const std::string &rhs)
-{
-    return lhs + QString::fromStdString(rhs);
+    return Path(lhs.data() + rhs);
 }
 
 QDataStream &operator<<(QDataStream &out, const Path &path)

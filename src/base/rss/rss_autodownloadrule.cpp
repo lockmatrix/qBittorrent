@@ -101,22 +101,22 @@ namespace
     }
 }
 
-const QString Str_Name(QStringLiteral("name"));
-const QString Str_Enabled(QStringLiteral("enabled"));
-const QString Str_UseRegex(QStringLiteral("useRegex"));
-const QString Str_MustContain(QStringLiteral("mustContain"));
-const QString Str_MustNotContain(QStringLiteral("mustNotContain"));
-const QString Str_EpisodeFilter(QStringLiteral("episodeFilter"));
-const QString Str_AffectedFeeds(QStringLiteral("affectedFeeds"));
-const QString Str_SavePath(QStringLiteral("savePath"));
-const QString Str_AssignedCategory(QStringLiteral("assignedCategory"));
-const QString Str_LastMatch(QStringLiteral("lastMatch"));
-const QString Str_IgnoreDays(QStringLiteral("ignoreDays"));
-const QString Str_AddPaused(QStringLiteral("addPaused"));
-const QString Str_CreateSubfolder(QStringLiteral("createSubfolder"));
-const QString Str_ContentLayout(QStringLiteral("torrentContentLayout"));
-const QString Str_SmartFilter(QStringLiteral("smartFilter"));
-const QString Str_PreviouslyMatched(QStringLiteral("previouslyMatchedEpisodes"));
+const QString Str_Name = u"name"_qs;
+const QString Str_Enabled = u"enabled"_qs;
+const QString Str_UseRegex = u"useRegex"_qs;
+const QString Str_MustContain = u"mustContain"_qs;
+const QString Str_MustNotContain = u"mustNotContain"_qs;
+const QString Str_EpisodeFilter = u"episodeFilter"_qs;
+const QString Str_AffectedFeeds = u"affectedFeeds"_qs;
+const QString Str_SavePath = u"savePath"_qs;
+const QString Str_AssignedCategory = u"assignedCategory"_qs;
+const QString Str_LastMatch = u"lastMatch"_qs;
+const QString Str_IgnoreDays = u"ignoreDays"_qs;
+const QString Str_AddPaused = u"addPaused"_qs;
+const QString Str_CreateSubfolder = u"createSubfolder"_qs;
+const QString Str_ContentLayout = u"torrentContentLayout"_qs;
+const QString Str_SmartFilter = u"smartFilter"_qs;
+const QString Str_PreviouslyMatched = u"previouslyMatchedEpisodes"_qs;
 
 namespace RSS
 {
@@ -144,24 +144,35 @@ namespace RSS
         mutable QStringList lastComputedEpisodes;
         mutable QHash<QString, QRegularExpression> cachedRegexes;
 
-        bool operator==(const AutoDownloadRuleData &other) const
+        friend bool operator==(const AutoDownloadRuleData &left, const AutoDownloadRuleData &right)
         {
-            return (name == other.name)
-                    && (enabled == other.enabled)
-                    && (mustContain == other.mustContain)
-                    && (mustNotContain == other.mustNotContain)
-                    && (episodeFilter == other.episodeFilter)
-                    && (feedURLs == other.feedURLs)
-                    && (useRegex == other.useRegex)
-                    && (ignoreDays == other.ignoreDays)
-                    && (lastMatch == other.lastMatch)
-                    && (savePath == other.savePath)
-                    && (category == other.category)
-                    && (addPaused == other.addPaused)
-                    && (contentLayout == other.contentLayout)
-                    && (smartFilter == other.smartFilter);
+            return (left.name == right.name)
+                    && (left.enabled == right.enabled)
+                    && (left.mustContain == right.mustContain)
+                    && (left.mustNotContain == right.mustNotContain)
+                    && (left.episodeFilter == right.episodeFilter)
+                    && (left.feedURLs == right.feedURLs)
+                    && (left.useRegex == right.useRegex)
+                    && (left.ignoreDays == right.ignoreDays)
+                    && (left.lastMatch == right.lastMatch)
+                    && (left.savePath == right.savePath)
+                    && (left.category == right.category)
+                    && (left.addPaused == right.addPaused)
+                    && (left.contentLayout == right.contentLayout)
+                    && (left.smartFilter == right.smartFilter);
         }
     };
+
+    bool operator==(const AutoDownloadRule &left, const AutoDownloadRule &right)
+    {
+        return (left.m_dataPtr == right.m_dataPtr) // optimization
+                || (*(left.m_dataPtr) == *(right.m_dataPtr));
+    }
+
+    bool operator!=(const AutoDownloadRule &left, const AutoDownloadRule &right)
+    {
+        return !(left == right);
+    }
 }
 
 using namespace RSS;
@@ -346,7 +357,7 @@ bool AutoDownloadRule::matchesEpisodeFilterExpression(const QString &articleTitl
         }
         else
         { // Single number
-            const QString expStr {QString::fromLatin1("\\b(?:s0?%1[ -_\\.]?e0?%2|%1x0?%2)(?:\\D|\\b)").arg(season, episode)};
+            const QString expStr {u"\\b(?:s0?%1[ -_\\.]?e0?%2|%1x0?%2)(?:\\D|\\b)"_qs.arg(season, episode)};
             if (cachedRegex(expStr).match(articleTitle).hasMatch())
                 return true;
         }
@@ -391,8 +402,8 @@ bool AutoDownloadRule::matchesSmartEpisodeFilter(const QString &articleTitle) co
         // so we don't download those
         if (isRepack && isProper)
         {
-            m_dataPtr->lastComputedEpisodes.append(episodeStr + QLatin1String("-REPACK"));
-            m_dataPtr->lastComputedEpisodes.append(episodeStr + QLatin1String("-PROPER"));
+            m_dataPtr->lastComputedEpisodes.append(episodeStr + u"-REPACK");
+            m_dataPtr->lastComputedEpisodes.append(episodeStr + u"-PROPER");
         }
     }
 
@@ -446,17 +457,6 @@ AutoDownloadRule &AutoDownloadRule::operator=(const AutoDownloadRule &other)
         m_dataPtr = other.m_dataPtr;
     }
     return *this;
-}
-
-bool AutoDownloadRule::operator==(const AutoDownloadRule &other) const
-{
-    return (m_dataPtr == other.m_dataPtr) // optimization
-            || (*m_dataPtr == *other.m_dataPtr);
-}
-
-bool AutoDownloadRule::operator!=(const AutoDownloadRule &other) const
-{
-    return !operator==(other);
 }
 
 QJsonObject AutoDownloadRule::toJsonObject() const

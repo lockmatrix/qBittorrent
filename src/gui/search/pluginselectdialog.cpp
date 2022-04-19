@@ -48,7 +48,7 @@
 #include "searchwidget.h"
 #include "ui_pluginselectdialog.h"
 
-#define SETTINGS_KEY(name) "SearchPluginSelectDialog/" name
+#define SETTINGS_KEY(name) u"SearchPluginSelectDialog/" name
 
 enum PluginColumns
 {
@@ -62,7 +62,7 @@ enum PluginColumns
 PluginSelectDialog::PluginSelectDialog(SearchPluginManager *pluginManager, QWidget *parent)
     : QDialog(parent)
     , m_ui(new Ui::PluginSelectDialog)
-    , m_storeDialogSize(SETTINGS_KEY("Size"))
+    , m_storeDialogSize(SETTINGS_KEY(u"Size"_qs))
     , m_pluginManager(pluginManager)
 {
     m_ui->setupUi(this);
@@ -139,7 +139,7 @@ void PluginSelectDialog::dragEnterEvent(QDragEnterEvent *event)
         qDebug("mimeData: %s", qUtf8Printable(mime));
     }
 
-    if (event->mimeData()->hasFormat(QLatin1String("text/plain")) || event->mimeData()->hasFormat(QLatin1String("text/uri-list")))
+    if (event->mimeData()->hasFormat(u"text/plain"_qs) || event->mimeData()->hasFormat(u"text/uri-list"_qs))
     {
         event->acceptProposedAction();
     }
@@ -315,7 +315,7 @@ void PluginSelectDialog::addNewPlugin(const QString &pluginName)
                     DownloadRequest(plugin->url + u"/favicon.ico").saveToFile(true)
                     , this, &PluginSelectDialog::iconDownloadFinished);
     }
-    item->setText(PLUGIN_VERSION, plugin->version);
+    item->setText(PLUGIN_VERSION, plugin->version.toString());
 }
 
 void PluginSelectDialog::startAsyncOp()
@@ -382,8 +382,7 @@ void PluginSelectDialog::askForLocalPlugin()
 {
     const QStringList pathsList = QFileDialog::getOpenFileNames(
                 nullptr, tr("Select search plugins"), QDir::homePath(),
-                tr("qBittorrent search plugin") + QLatin1String(" (*.py)")
-                );
+                (tr("qBittorrent search plugin") + u" (*.py)"));
     for (const QString &path : pathsList)
     {
         startAsyncOp();
@@ -414,7 +413,7 @@ void PluginSelectDialog::iconDownloadFinished(const Net::DownloadResult &result)
             PluginInfo *plugin = m_pluginManager->pluginInfo(id);
             if (!plugin) continue;
 
-            const QString ext = result.url.endsWith(QLatin1String(".ico"), Qt::CaseInsensitive) ? QLatin1String(".ico") : QLatin1String(".png");
+            const QString ext = result.url.endsWith(u".ico", Qt::CaseInsensitive) ? u".ico"_qs : u".png"_qs;
             const Path iconPath = SearchPluginManager::pluginsLocation() / Path(id + ext);
             if (Utils::Fs::copyFile(filePath, iconPath))
             {
@@ -483,7 +482,7 @@ void PluginSelectDialog::pluginUpdated(const QString &name)
     finishAsyncOp();
     PluginVersion version = m_pluginManager->pluginInfo(name)->version;
     QTreeWidgetItem *item = findItemWithID(name);
-    item->setText(PLUGIN_VERSION, version);
+    item->setText(PLUGIN_VERSION, version.toString());
     m_updatedPlugins.append(name);
     finishPluginUpdate();
 }

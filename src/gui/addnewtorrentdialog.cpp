@@ -65,12 +65,12 @@
 
 namespace
 {
-#define SETTINGS_KEY(name) "AddNewTorrentDialog/" name
-    const QString KEY_ENABLED = QStringLiteral(SETTINGS_KEY("Enabled"));
-    const QString KEY_TOPLEVEL = QStringLiteral(SETTINGS_KEY("TopLevel"));
-    const QString KEY_SAVEPATHHISTORY = QStringLiteral(SETTINGS_KEY("SavePathHistory"));
-    const QString KEY_DOWNLOADPATHHISTORY = QStringLiteral(SETTINGS_KEY("DownloadPathHistory"));
-    const QString KEY_SAVEPATHHISTORYLENGTH = QStringLiteral(SETTINGS_KEY("SavePathHistoryLength"));
+#define SETTINGS_KEY(name) u"AddNewTorrentDialog/" name
+    const QString KEY_ENABLED = SETTINGS_KEY(u"Enabled"_qs);
+    const QString KEY_TOPLEVEL = SETTINGS_KEY(u"TopLevel"_qs);
+    const QString KEY_SAVEPATHHISTORY = SETTINGS_KEY(u"SavePathHistory"_qs);
+    const QString KEY_DOWNLOADPATHHISTORY = SETTINGS_KEY(u"DownloadPathHistory"_qs);
+    const QString KEY_SAVEPATHHISTORYLENGTH = SETTINGS_KEY(u"SavePathHistoryLength"_qs);
 
     // just a shortcut
     inline SettingsStorage *settings()
@@ -170,15 +170,15 @@ AddNewTorrentDialog::AddNewTorrentDialog(const BitTorrent::AddTorrentParams &inP
     : QDialog(parent)
     , m_ui(new Ui::AddNewTorrentDialog)
     , m_torrentParams(inParams)
-    , m_storeDialogSize(SETTINGS_KEY("DialogSize"))
-    , m_storeDefaultCategory(SETTINGS_KEY("DefaultCategory"))
-    , m_storeRememberLastSavePath(SETTINGS_KEY("RememberLastSavePath"))
+    , m_storeDialogSize(SETTINGS_KEY(u"DialogSize"_qs))
+    , m_storeDefaultCategory(SETTINGS_KEY(u"DefaultCategory"_qs))
+    , m_storeRememberLastSavePath(SETTINGS_KEY(u"RememberLastSavePath"_qs))
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    , m_storeTreeHeaderState("GUI/Qt6/" SETTINGS_KEY("TreeHeaderState"))
-    , m_storeSplitterState("GUI/Qt6/" SETTINGS_KEY("SplitterState"))
+    , m_storeTreeHeaderState(u"GUI/Qt6/" SETTINGS_KEY(u"TreeHeaderState"_qs))
+    , m_storeSplitterState(u"GUI/Qt6/" SETTINGS_KEY(u"SplitterState"_qs))
 #else
-    , m_storeTreeHeaderState(SETTINGS_KEY("TreeHeaderState"))
-    , m_storeSplitterState(SETTINGS_KEY("SplitterState"))
+    , m_storeTreeHeaderState(SETTINGS_KEY(u"TreeHeaderState"_qs))
+    , m_storeSplitterState(SETTINGS_KEY(u"SplitterState"_qs))
 #endif
 {
     // TODO: set dialog file properties using m_torrentParams.filePriorities
@@ -254,6 +254,38 @@ AddNewTorrentDialog::AddNewTorrentDialog(const BitTorrent::AddTorrentParams &inP
         m_ui->savePath->setFocus();
     else
         m_ui->categoryComboBox->setFocus();
+}
+
+void AddNewTorrentDialog::applyContentLayout()
+{
+    Q_ASSERT(hasMetadata());
+    Q_ASSERT(!m_torrentParams.filePaths.isEmpty());
+
+    const auto originalContentLayout = (m_originalRootFolder.isEmpty()
+                                        ? BitTorrent::TorrentContentLayout::NoSubfolder
+                                        : BitTorrent::TorrentContentLayout::Subfolder);
+    const int currentIndex = m_ui->contentLayoutComboBox->currentIndex();
+    const auto contentLayout = ((currentIndex == 0)
+                                  ? originalContentLayout
+                                  : static_cast<BitTorrent::TorrentContentLayout>(currentIndex));
+    if (contentLayout != m_currentContentLayout)
+    {
+        PathList &filePaths = m_torrentParams.filePaths;
+
+        if (contentLayout == BitTorrent::TorrentContentLayout::NoSubfolder)
+        {
+            Path::stripRootFolder(filePaths);
+        }
+        else
+        {
+            const auto rootFolder = ((originalContentLayout == BitTorrent::TorrentContentLayout::Subfolder)
+                                     ? m_originalRootFolder
+                                     : filePaths.at(0).removedExtension());
+            Path::addRootFolder(filePaths, rootFolder);
+        }
+
+        m_currentContentLayout = contentLayout;
+    }
 }
 
 AddNewTorrentDialog::~AddNewTorrentDialog()
@@ -538,7 +570,7 @@ void AddNewTorrentDialog::categoryChanged(int index)
     }
 }
 
-void AddNewTorrentDialog::contentLayoutChanged(const int index)
+void AddNewTorrentDialog::contentLayoutChanged()
 {
     if (!hasMetadata())
         return;
@@ -546,11 +578,8 @@ void AddNewTorrentDialog::contentLayoutChanged(const int index)
     const auto filePriorities = m_contentModel->model()->getFilePriorities();
     m_contentModel->model()->clear();
 
-    Q_ASSERT(!m_torrentParams.filePaths.isEmpty());
-    const auto contentLayout = ((index == 0)
-                                ? BitTorrent::detectContentLayout(m_torrentInfo.filePaths())
-                                : static_cast<BitTorrent::TorrentContentLayout>(index));
-    BitTorrent::applyContentLayout(m_torrentParams.filePaths, contentLayout, Path::findRootFolder(m_torrentInfo.filePaths()));
+    applyContentLayout();
+
     m_contentModel->model()->setupModelData(FileStorageAdaptor(m_torrentInfo, m_torrentParams.filePaths));
     m_contentModel->model()->updateFilesPriorities(filePriorities);
 
@@ -905,12 +934,16 @@ void AddNewTorrentDialog::setupTreeview()
         connect(m_ui->buttonSelectAll, &QPushButton::clicked, m_contentModel, &TorrentContentFilterModel::selectAll);
         connect(m_ui->buttonSelectNone, &QPushButton::clicked, m_contentModel, &TorrentContentFilterModel::selectNone);
 
-        const auto contentLayout = ((m_ui->contentLayoutComboBox->currentIndex() == 0)
-                                    ? BitTorrent::detectContentLayout(m_torrentInfo.filePaths())
-                                    : static_cast<BitTorrent::TorrentContentLayout>(m_ui->contentLayoutComboBox->currentIndex()));
+
         if (m_torrentParams.filePaths.isEmpty())
             m_torrentParams.filePaths = m_torrentInfo.filePaths();
-        BitTorrent::applyContentLayout(m_torrentParams.filePaths, contentLayout, Path::findRootFolder(m_torrentInfo.filePaths()));
+
+        m_originalRootFolder = Path::findRootFolder(m_torrentInfo.filePaths());
+        m_currentContentLayout = (m_originalRootFolder.isEmpty()
+                                            ? BitTorrent::TorrentContentLayout::NoSubfolder
+                                            : BitTorrent::TorrentContentLayout::Subfolder);
+        applyContentLayout();
+
         // List files in torrent
         m_contentModel->model()->setupModelData(FileStorageAdaptor(m_torrentInfo, m_torrentParams.filePaths));
         if (const QByteArray state = m_storeTreeHeaderState; !state.isEmpty())
