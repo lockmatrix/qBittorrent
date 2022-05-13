@@ -81,7 +81,7 @@ jobs:
           cp $Qt5_DIR/lib/libicui18n.so.56 upload/
           cp $Qt5_DIR/lib/libicuuc.so.56 upload/
           cp $Qt5_DIR/lib/libicudata.so.56 upload/
-          cp /usr/local/lib/x86_64-linux-gnu/libtorrent-rasterbar.so.10 upload/
+          cp /usr/local/lib/libtorrent-rasterbar.so.10 upload/
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
