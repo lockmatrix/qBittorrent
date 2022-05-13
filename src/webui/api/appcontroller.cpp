@@ -315,6 +315,8 @@ void AppController::preferencesAction()
     data[u"disk_cache_ttl"_qs] = session->diskCacheTTL();
     // Disk queue size
     data[u"disk_queue_size"_qs] = session->diskQueueSize();
+    // Disk IO Type
+    data[u"disk_io_type"_qs] = static_cast<int>(session->diskIOType());
     // Enable OS cache
     data[u"enable_os_cache"_qs] = session->useOSCache();
     // Coalesce reads & writes
@@ -661,7 +663,7 @@ void AppController::setPreferencesAction()
     if (hasKey(u"web_ui_address"_qs))
         pref->setWebUiAddress(it.value().toString());
     if (hasKey(u"web_ui_port"_qs))
-        pref->setWebUiPort(it.value().toUInt());
+        pref->setWebUiPort(it.value().value<quint16>());
     if (hasKey(u"web_ui_upnp"_qs))
         pref->setUPnPForWebUIPort(it.value().toBool());
     if (hasKey(u"use_https"_qs))
@@ -799,6 +801,9 @@ void AppController::setPreferencesAction()
     // Disk queue size
     if (hasKey(u"disk_queue_size"_qs))
         session->setDiskQueueSize(it.value().toLongLong());
+    // Disk IO Type
+    if (hasKey(u"disk_io_type"_qs))
+        session->setDiskIOType(static_cast<BitTorrent::DiskIOType>(it.value().toInt()));
     // Enable OS cache
     if (hasKey(u"enable_os_cache"_qs))
         session->setUseOSCache(it.value().toBool());

@@ -28,6 +28,7 @@ target_sources(qbt_app PRIVATE
     cmdoptions.h
     filelogger.h
     qtlocalpeer/qtlocalpeer.h
+    signalhandler.h
     upgrade.h
 
     # sources
@@ -37,6 +38,7 @@ target_sources(qbt_app PRIVATE
     filelogger.cpp
     main.cpp
     qtlocalpeer/qtlocalpeer.cpp
+    signalhandler.cpp
     upgrade.cpp
 
     # resources
@@ -99,50 +101,45 @@ endif()
 # Additional feature dependent configuration
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-if (STACKTRACE)
-    target_compile_definitions(qbt_app PRIVATE STACKTRACE)
-
-    if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        target_sources(qbt_app PRIVATE stacktrace_win.h)
-
-        if (GUI)
-            qt_wrap_ui(STACKTRACE_UI_HEADERS stacktracedialog.ui)
-
-            target_sources(qbt_app PRIVATE
-                stacktracedialog.h
-                stacktracedialog.cpp
-                ${STACKTRACE_UI_HEADERS}
-            )
-
-            # UI headers will be generated in ${CMAKE_CURRENT_BINARY_DIR}
-            target_include_directories(qbt_app PRIVATE
-                ${CMAKE_CURRENT_BINARY_DIR}
-            )
-        endif()
-
-        # i686 arch on Windows requires frame pointer preservation
-        if (MSVC)
-            target_compile_options(qbt_app PRIVATE /Zi)
-            target_link_options(qbt_app PUBLIC LINKER:/DEBUG)
-            if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-                target_compile_options(qbt_app PRIVATE /Oy)
-            endif()
-        else()
-            if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-                target_compile_options(qbt_app PRIVATE -fno-omit-frame-pointer)
-            endif()
-        endif()
-
-        target_link_libraries(qbt_app PUBLIC dbghelp)
-    else()
-        target_sources(qbt_app PRIVATE stacktrace.h)
-    endif()
-endif()
-
 if (GUI)
     target_link_libraries(qbt_app PRIVATE qbt_gui)
     if ((CMAKE_SYSTEM_NAME STREQUAL "Windows") OR (CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
         qt_import_plugins(qbt_app INCLUDE Qt::QSvgIconPlugin Qt::QSvgPlugin)
+    endif()
+endif()
+
+if (STACKTRACE)
+    target_compile_definitions(qbt_app PRIVATE STACKTRACE)
+
+    target_sources(qbt_app PRIVATE
+        stacktrace.h
+        stacktrace.cpp
+    )
+
+    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        target_compile_definitions(qbt_app PRIVATE BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED)
+        target_link_options(qbt_app PUBLIC -rdynamic)
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_link_libraries(qbt_app PUBLIC ${CMAKE_DL_LIBS})
+        target_link_options(qbt_app PUBLIC -rdynamic)
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        if (MSVC)
+            target_compile_options(qbt_app PRIVATE /Zi)
+            target_link_options(qbt_app PUBLIC
+                /DEBUG
+                /PDBALTPATH:$<TARGET_PDB_FILE_NAME:qbt_app>
+            )
+
+            if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+                target_compile_options(qbt_app PRIVATE /Oy-)
+            endif()
+        else()
+            target_link_options(qbt_app PUBLIC LINKER:--export-dynamic)
+
+            if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+                target_compile_options(qbt_app PRIVATE -fno-omit-frame-pointer)
+            endif()
+        endif()
     endif()
 endif()
 

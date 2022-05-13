@@ -1,6 +1,8 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2018, 2022  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2022  Mike Tzou (Chocobo1)
+ * Copyright (C) 2014  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2006  Christophe Dumez <chris@qbittorrent.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,37 +30,4 @@
 
 #pragma once
 
-#include <QtContainerFwd>
-#include <QObject>
-#include <QVariant>
-
-class QString;
-
-using DataMap = QHash<QString, QByteArray>;
-using StringMap = QHash<QString, QString>;
-
-class APIController : public QObject
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(APIController)
-
-public:
-    explicit APIController(QObject *parent = nullptr);
-
-    QVariant run(const QString &action, const StringMap &params, const DataMap &data = {});
-
-protected:
-    const StringMap &params() const;
-    const DataMap &data() const;
-    void requireParams(const QVector<QString> &requiredParams) const;
-
-    void setResult(const QString &result);
-    void setResult(const QJsonArray &result);
-    void setResult(const QJsonObject &result);
-    void setResult(const QByteArray &result);
-
-private:
-    StringMap m_params;
-    DataMap m_data;
-    QVariant m_result;
-};
+void registerSignalHandlers();
