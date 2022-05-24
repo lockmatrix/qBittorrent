@@ -1,6 +1,6 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2006  Christophe Dumez <chris@qbittorrent.org>
+ * Copyright (C) 2022  Vladimir Golovnev <glassez@yandex.ru>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,31 +28,18 @@
 
 #pragma once
 
-#include "piecesbar.h"
+#include <vector>
 
-class PieceAvailabilityBar final : public PiecesBar
+#include <libtorrent/announce_entry.hpp>
+
+#ifdef QBT_USES_LIBTORRENT2
+#include <libtorrent/client_data.hpp>
+using LTClientData = lt::client_data_t;
+#else
+using LTClientData = void *;
+#endif
+
+struct ExtensionData
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(PieceAvailabilityBar)
-
-    using base = PiecesBar;
-
-public:
-    PieceAvailabilityBar(QWidget *parent);
-
-    void setAvailability(const QVector<int> &avail);
-
-    // PiecesBar interface
-    void clear() override;
-
-private:
-    bool updateImage(QImage &image) override;
-    QString simpleToolTipText() const override;
-
-    // last used int vector, uses to better resize redraw
-    // TODO: make a diff pieces to new pieces and update only changed pixels, speedup when update > 20x faster
-    QVector<int> m_pieces;
-
-    // scale int vector to float vector
-    QVector<float> intToFloatVector(const QVector<int> &vecin, int reqSize);
+    std::vector<lt::announce_entry> trackers;
 };
