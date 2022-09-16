@@ -42,7 +42,7 @@ jobs:
       - name: Install libtorrent
         run: |
           git clone \
-            --branch my_v1 \
+            --branch my_v2 \
             --depth 1 \
             --recurse-submodules \
             https://github.com/lockmatrix/libtorrent.git
@@ -85,5 +85,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ubuntu-20.04-x64-v4.4-libtorrent_myv1
+          name: ubuntu-20.04-x64-v4.4-libtorrent_myv2
           path: upload

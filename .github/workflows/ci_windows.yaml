@@ -77,7 +77,7 @@ jobs:
       - name: Install libtorrent
         run: |
           git clone `
-            --branch my `
+            --branch my_v2 `
             --depth 1 `
             --recurse-submodules `
             https://github.com/lockmatrix/libtorrent.git
@@ -150,5 +150,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: qBittorrent-CI_Windows-x64
+          name: qBittorrent-CI_Windows-x64-libtorrent_myv2
           path: upload
