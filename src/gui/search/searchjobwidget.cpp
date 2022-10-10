@@ -44,7 +44,6 @@
 #include "base/search/searchdownloadhandler.h"
 #include "base/search/searchhandler.h"
 #include "base/search/searchpluginmanager.h"
-#include "base/settingvalue.h"
 #include "base/utils/misc.h"
 #include "gui/addnewtorrentdialog.h"
 #include "gui/lineedit.h"
@@ -57,6 +56,7 @@ SearchJobWidget::SearchJobWidget(SearchHandler *searchHandler, QWidget *parent)
     : QWidget(parent)
     , m_ui(new Ui::SearchJobWidget)
     , m_searchHandler(searchHandler)
+    , m_nameFilteringMode(u"Search/FilteringMode"_qs)
 {
     m_ui->setupUi(this);
 
@@ -208,7 +208,7 @@ void SearchJobWidget::cancelSearch()
 
 void SearchJobWidget::downloadTorrents(const AddTorrentOption option)
 {
-    const QModelIndexList rows {m_ui->resultsBrowser->selectionModel()->selectedRows()};
+    const QModelIndexList rows = m_ui->resultsBrowser->selectionModel()->selectedRows();
     for (const QModelIndex &rowIndex : rows)
         downloadTorrent(rowIndex, option);
 }
@@ -319,7 +319,7 @@ void SearchJobWidget::updateFilter()
         sizeInBytes(m_ui->minSize->value(), static_cast<SizeUnit>(m_ui->minSizeUnit->currentIndex())),
         sizeInBytes(m_ui->maxSize->value(), static_cast<SizeUnit>(m_ui->maxSizeUnit->currentIndex())));
 
-    nameFilteringModeSetting() = filteringMode();
+    m_nameFilteringMode = filteringMode();
 
     m_proxyModel->invalidate();
     updateResultsCount();
@@ -355,8 +355,8 @@ void SearchJobWidget::fillFilterComboBoxes()
     m_ui->filterMode->addItem(tr("Torrent names only"), static_cast<int>(NameFilteringMode::OnlyNames));
     m_ui->filterMode->addItem(tr("Everywhere"), static_cast<int>(NameFilteringMode::Everywhere));
 
-    QVariant selectedMode = static_cast<int>(nameFilteringModeSetting().get(NameFilteringMode::OnlyNames));
-    int index = m_ui->filterMode->findData(selectedMode);
+    const QVariant selectedMode = static_cast<int>(m_nameFilteringMode.get(NameFilteringMode::OnlyNames));
+    const int index = m_ui->filterMode->findData(selectedMode);
     m_ui->filterMode->setCurrentIndex((index == -1) ? 0 : index);
 }
 
@@ -390,22 +390,22 @@ void SearchJobWidget::contextMenuEvent(QContextMenuEvent *event)
     auto *menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
-    menu->addAction(UIThemeManager::instance()->getIcon(u"download"_qs), tr("Open download window")
-        , this, [this]() { downloadTorrents(AddTorrentOption::ShowDialog); });
-    menu->addAction(UIThemeManager::instance()->getIcon(u"download"_qs), tr("Download")
-        , this, [this]() { downloadTorrents(AddTorrentOption::SkipDialog); });
+    menu->addAction(UIThemeManager::instance()->getIcon(u"download"_qs)
+        , tr("Open download window"), this, [this]() { downloadTorrents(AddTorrentOption::ShowDialog); });
+    menu->addAction(UIThemeManager::instance()->getIcon(u"downloading"_qs)
+        , tr("Download"), this, [this]() { downloadTorrents(AddTorrentOption::SkipDialog); });
     menu->addSeparator();
-    menu->addAction(UIThemeManager::instance()->getIcon(u"application-x-mswinurl"_qs), tr("Open description page")
+    menu->addAction(UIThemeManager::instance()->getIcon(u"application-url"_qs), tr("Open description page")
         , this, &SearchJobWidget::openTorrentPages);
 
     QMenu *copySubMenu = menu->addMenu(
         UIThemeManager::instance()->getIcon(u"edit-copy"_qs), tr("Copy"));
 
-    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"edit-copy"_qs), tr("Name")
+    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"name"_qs), tr("Name")
         , this, &SearchJobWidget::copyTorrentNames);
-    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"edit-copy"_qs), tr("Download link")
+    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"insert-link"_qs), tr("Download link")
         , this, &SearchJobWidget::copyTorrentDownloadLinks);
-    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"edit-copy"_qs), tr("Description page URL")
+    copySubMenu->addAction(UIThemeManager::instance()->getIcon(u"application-url"_qs), tr("Description page URL")
         , this, &SearchJobWidget::copyTorrentURLs);
 
     menu->popup(event->globalPos());
@@ -543,12 +543,6 @@ void SearchJobWidget::appendSearchResults(const QVector<SearchResult> &results)
     }
 
     updateResultsCount();
-}
-
-SettingValue<SearchJobWidget::NameFilteringMode> &SearchJobWidget::nameFilteringModeSetting()
-{
-    static SettingValue<NameFilteringMode> setting {u"Search/FilteringMode"_qs};
-    return setting;
 }
 
 void SearchJobWidget::keyPressEvent(QKeyEvent *event)

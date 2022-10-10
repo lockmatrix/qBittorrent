@@ -42,6 +42,14 @@
         <source>Don't create subfolder</source>
         <translation>Jangan buat subfolder</translation>
     </message>
+    <message>
+        <source>Manual</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>CategoryFilterModel</name>
@@ -78,7 +86,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Hapus torrent</translation>
+        <translation type="vanished">Hapus torrent</translation>
     </message>
     <message>
         <source>New Category</source>
@@ -87,6 +95,10 @@
     <message>
         <source>Edit category...</source>
         <translation>Sunting kategori...</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -272,10 +284,6 @@
         <translation>Unggah torrent lokal</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete the selected torrents from the transfer list?</source>
-        <translation>Apakah Anda yakin ingin menghapus torrent yang dipilih dari daftar transfer?</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>Simpan</translation>
     </message>
@@ -363,6 +371,10 @@
         <source>Original author</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Are you sure you want to remove the selected torrents from the transfer list?</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
@@ -428,7 +440,7 @@
     </message>
     <message>
         <source>Delete</source>
-        <translation>Hapus</translation>
+        <translation type="vanished">Hapus</translation>
     </message>
     <message>
         <source>Pause All</source>
@@ -575,6 +587,14 @@
         <source>Filters Sidebar</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -616,7 +636,7 @@
     </message>
     <message>
         <source>Run external program on torrent completion</source>
-        <translation>Jalankan program eksternal saat torrent selesai</translation>
+        <translation type="vanished">Jalankan program eksternal saat torrent selesai</translation>
     </message>
     <message>
         <source>IP Filtering</source>
@@ -1125,10 +1145,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Enable OS cache:</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>When ratio reaches</source>
         <translation>Saat rasio telah tercapai</translation>
     </message>
@@ -1158,7 +1174,7 @@
     </message>
     <message>
         <source>Fastest upload</source>
-        <translation type="unfinished" />
+        <translation>Unggahan tercepat</translation>
     </message>
     <message>
         <source>Pause torrent</source>
@@ -1170,7 +1186,7 @@
     </message>
     <message>
         <source>qBittorrent Section</source>
-        <translation type="unfinished" />
+        <translation>Bagian qBittorrent</translation>
     </message>
     <message>
         <source>Send buffer watermark factor:</source>
@@ -1178,7 +1194,7 @@
     </message>
     <message>
         <source>libtorrent Section</source>
-        <translation type="unfinished" />
+        <translation>Bagian libtorrent</translation>
     </message>
     <message>
         <source>Outgoing ports (Min) [0: Disabled]:</source>
@@ -1234,7 +1250,7 @@
     </message>
     <message>
         <source>min</source>
-        <translation type="unfinished" />
+        <translation>min</translation>
     </message>
     <message>
         <source>Upload choking algorithm:</source>
@@ -1246,7 +1262,7 @@
     </message>
     <message>
         <source>KiB</source>
-        <translation type="unfinished" />
+        <translation>KiB</translation>
     </message>
     <message>
         <source>Round-robin</source>
@@ -1258,7 +1274,7 @@
     </message>
     <message>
         <source>MiB</source>
-        <translation type="unfinished" />
+        <translation>MiB</translation>
     </message>
     <message>
         <source>Send buffer low watermark:</source>
@@ -1283,10 +1299,6 @@
     <message>
         <source>ban for:</source>
         <translation>diblokir karena:</translation>
-    </message>
-    <message>
-        <source>Use piece extent affinity (requires libtorrent &gt;= 1.2.2):</source>
-        <translation type="unfinished" />
     </message>
     <message>
         <source>Stop tracker timeout:</source>
@@ -1369,10 +1381,6 @@
         <translation>Jumlah maksimum artikel per umpan:</translation>
     </message>
     <message>
-        <source>Max concurrent HTTP announces (requires libtorrent &gt;= 1.2.7):</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source> min</source>
         <translation>min</translation>
     </message>
@@ -1411,10 +1419,6 @@
     <message>
         <source>Peer connection protocol:</source>
         <translation>Protokol koneksi rekanan:</translation>
-    </message>
-    <message>
-        <source>Support internationalized domain name (IDN) (requires libtorrent &gt;= 1.2.12):</source>
-        <translation type="unfinished" />
     </message>
     <message>
         <source>Torrent content layout:</source>
@@ -1517,7 +1521,87 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Physical memory (RAM) usage limit:</source>
+        <source>Write-through (requires libtorrent &gt;= 2.0.6)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>It controls the internal state update interval which in turn will affect UI updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO read mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO write mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Use piece extent affinity:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Max concurrent HTTP announces:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Enable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Refresh interval:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Physical memory (RAM) usage limit (applied if libtorrent &gt;= 2.0):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ms</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Excluded file names</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Support internationalized domain name (IDN):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent finished</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Whitelist for filtering HTTP Host header values.
+In order to defend against DNS rebinding attack,
+you should put in domain names used by WebUI server.
+
+Use ';' to split multiple entries. Can use wildcard '*'.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS certificate should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Specify reverse proxy IPs (or subnets, e.g. 0.0.0.0/24) in order to use forwarded client address (X-Forwarded-For header). Use ';' to split multiple entries.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS key should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -1786,7 +1870,7 @@
     </message>
     <message>
         <source>Upload limit:</source>
-        <translation type="unfinished" />
+        <translation>Batas mengunggah:</translation>
     </message>
     <message>
         <source>Priority</source>
@@ -1841,11 +1925,11 @@
     </message>
     <message>
         <source>Other...</source>
-        <translation type="unfinished" />
+        <translation>Lainnya...</translation>
     </message>
     <message>
         <source>Type folder here</source>
-        <translation type="unfinished" />
+        <translation>Tulis folder di sini</translation>
     </message>
 </context>
 <context>
@@ -2186,7 +2270,7 @@
     </message>
     <message>
         <source>Availability</source>
-        <translation type="unfinished" />
+        <translation>Ketersediaan</translation>
     </message>
 </context>
 <context>
@@ -2206,10 +2290,6 @@
     <message>
         <source>Message</source>
         <translation>Pesan</translation>
-    </message>
-    <message>
-        <source>Downloaded</source>
-        <translation type="vanished">Diunduh</translation>
     </message>
     <message>
         <source>Tracker URL:</source>
@@ -2249,7 +2329,7 @@
     </message>
     <message>
         <source>Add a new tracker...</source>
-        <translation>Tambahkan pencari baru...</translation>
+        <translation type="vanished">Tambahkan pencari baru...</translation>
     </message>
     <message>
         <source>Edit tracker URL...</source>
@@ -2269,11 +2349,11 @@
     </message>
     <message>
         <source>Remaining</source>
-        <translation type="unfinished" />
+        <translation>Sisa</translation>
     </message>
     <message>
         <source>Availability</source>
-        <translation type="unfinished" />
+        <translation>Ketersediaan</translation>
     </message>
     <message>
         <source>Tier</source>
@@ -2281,22 +2361,26 @@
     </message>
     <message>
         <source>Download Priority</source>
-        <translation type="unfinished" />
+        <translation>Prioritas pengunduhan</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation type="unfinished" />
+        <translation>Nama</translation>
     </message>
     <message>
         <source>Progress</source>
-        <translation type="unfinished" />
+        <translation>Perkembangan</translation>
     </message>
     <message>
         <source>Total Size</source>
-        <translation type="unfinished" />
+        <translation>Total Ukuran</translation>
     </message>
     <message>
         <source>Times Downloaded</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Add trackers...</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2304,11 +2388,15 @@
     <name>TrackersAdditionDialog</name>
     <message>
         <source>Trackers addition dialog</source>
-        <translation>Dialog penambahan pelacak</translation>
+        <translation type="vanished">Dialog penambahan pelacak</translation>
     </message>
     <message>
         <source>List of trackers to add (one per line):</source>
         <translation>Daftar pelacak untuk ditambahkan (satu per baris):</translation>
+    </message>
+    <message>
+        <source>Add trackers</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2438,7 +2526,7 @@
     <message>
         <source>Delete</source>
         <comment>Delete the torrent</comment>
-        <translation>Hapus</translation>
+        <translation type="vanished">Hapus</translation>
     </message>
     <message>
         <source>Limit share ratio...</source>
@@ -2515,24 +2603,20 @@
         <translation>Unduh berurutan</translation>
     </message>
     <message>
-        <source>Force Recheck</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>New Category</source>
         <translation>Kategori Baru</translation>
     </message>
     <message>
         <source>Location</source>
-        <translation type="unfinished" />
+        <translation>Lokasi</translation>
     </message>
     <message>
         <source>New name</source>
-        <translation type="unfinished" />
+        <translation>Nama Baru</translation>
     </message>
     <message>
         <source>Set location</source>
-        <translation type="unfinished" />
+        <translation>Atur lokasi</translation>
     </message>
     <message>
         <source>Force reannounce</source>
@@ -2540,7 +2624,7 @@
     </message>
     <message>
         <source>Edit Category</source>
-        <translation type="unfinished" />
+        <translation>Sunting Kategori</translation>
     </message>
     <message>
         <source>Save path</source>
@@ -2598,6 +2682,10 @@
         <source>Export .torrent</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>UpDownRatioDialog</name>
@@ -2633,15 +2721,19 @@
     <name>confirmDeletionDlg</name>
     <message>
         <source>Deletion confirmation</source>
-        <translation>Hapus konfirmasi</translation>
-    </message>
-    <message>
-        <source>Also delete the files on the hard disk</source>
-        <translation>Juga hapus berkas pada diska</translation>
+        <translation type="vanished">Hapus konfirmasi</translation>
     </message>
     <message>
         <source>Deletion confirmation - qBittorrent</source>
-        <translation>Konfirmasi penghapusan - qBittorrent</translation>
+        <translation type="vanished">Konfirmasi penghapusan - qBittorrent</translation>
+    </message>
+    <message>
+        <source>Also permanently delete the files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove torrent(s)</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2835,6 +2927,14 @@
         <source>showing</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Click the "Search plugins..." button at the bottom right of the window to install some.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There aren't any search plugins installed.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>PluginSelectDlg</name>
@@ -2960,7 +3060,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Hapus torrent</translation>
+        <translation type="vanished">Hapus torrent</translation>
     </message>
     <message>
         <source>Tag:</source>
@@ -2985,6 +3085,10 @@
     <message>
         <source>Remove tag</source>
         <translation>Buang tag</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -3485,7 +3589,7 @@ Supports the formats: S01E01, 1x1, 2017.12.31 and 31.12.2017 (Date formats also 
     <name>TrackerFiltersList</name>
     <message>
         <source>Delete torrents</source>
-        <translation>Hapus torrent</translation>
+        <translation type="vanished">Hapus torrent</translation>
     </message>
     <message>
         <source>Resume torrents</source>
@@ -3502,6 +3606,10 @@ Supports the formats: S01E01, 1x1, 2017.12.31 and 31.12.2017 (Date formats also 
     <message>
         <source>Pause torrents</source>
         <translation>Tangguhkan torrent</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

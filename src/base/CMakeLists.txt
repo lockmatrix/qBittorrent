@@ -2,6 +2,7 @@ add_library(qbt_base STATIC
     # headers
     3rdparty/expected.hpp
     algorithm.h
+    applicationcomponent.h
     asyncfilestorage.h
     bittorrent/abstractfilestorage.h
     bittorrent/addtorrentparams.h
@@ -29,9 +30,9 @@ add_library(qbt_base STATIC
     bittorrent/portforwarderimpl.h
     bittorrent/resumedatastorage.h
     bittorrent/session.h
+    bittorrent/sessionimpl.h
     bittorrent/sessionstatus.h
     bittorrent/speedmonitor.h
-    bittorrent/statistics.h
     bittorrent/torrent.h
     bittorrent/torrentcontentlayout.h
     bittorrent/torrentcreatorthread.h
@@ -70,6 +71,7 @@ add_library(qbt_base STATIC
     preferences.h
     profile.h
     profile_p.h
+    rss/feed_serializer.h
     rss/rss_article.h
     rss/rss_autodownloader.h
     rss/rss_autodownloadrule.h
@@ -103,6 +105,7 @@ add_library(qbt_base STATIC
     version.h
 
     # sources
+    applicationcomponent.cpp
     asyncfilestorage.cpp
     bittorrent/abstractfilestorage.cpp
     bittorrent/bandwidthscheduler.cpp
@@ -121,9 +124,9 @@ add_library(qbt_base STATIC
     bittorrent/peeraddress.cpp
     bittorrent/peerinfo.cpp
     bittorrent/portforwarderimpl.cpp
-    bittorrent/session.cpp
+    bittorrent/resumedatastorage.cpp
+    bittorrent/sessionimpl.cpp
     bittorrent/speedmonitor.cpp
-    bittorrent/statistics.cpp
     bittorrent/torrent.cpp
     bittorrent/torrentcreatorthread.cpp
     bittorrent/torrentimpl.cpp
@@ -152,6 +155,7 @@ add_library(qbt_base STATIC
     preferences.cpp
     profile.cpp
     profile_p.cpp
+    rss/feed_serializer.cpp
     rss/rss_article.cpp
     rss/rss_autodownloader.cpp
     rss/rss_autodownloadrule.cpp

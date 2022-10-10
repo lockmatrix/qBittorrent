@@ -28,7 +28,7 @@
     </message>
     <message>
         <source>Content layout:</source>
-        <translation type="unfinished" />
+        <translation>Indholdsopsætning:</translation>
     </message>
     <message>
         <source>Original</source>
@@ -41,6 +41,14 @@
     <message>
         <source>Don't create subfolder</source>
         <translation>Opret ikke undermappe</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -78,7 +86,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Slet torrents</translation>
+        <translation type="vanished">Slet torrents</translation>
     </message>
     <message>
         <source>New Category</source>
@@ -87,6 +95,10 @@
     <message>
         <source>Edit category...</source>
         <translation>Rediger kategori...</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -272,10 +284,6 @@
         <translation>Upload  lokal torrent</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete the selected torrents from the transfer list?</source>
-        <translation>Er du sikker på, at du vil slette de valgte torrents fra overførselslisten?</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>Gem</translation>
     </message>
@@ -363,6 +371,10 @@
         <source>Original author</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Are you sure you want to remove the selected torrents from the transfer list?</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
@@ -428,7 +440,7 @@
     </message>
     <message>
         <source>Delete</source>
-        <translation>Slet</translation>
+        <translation type="vanished">Slet</translation>
     </message>
     <message>
         <source>Pause All</source>
@@ -575,6 +587,14 @@
         <source>Filters Sidebar</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -616,7 +636,7 @@
     </message>
     <message>
         <source>Run external program on torrent completion</source>
-        <translation>Kør eksternt program når torrent er færdig</translation>
+        <translation type="vanished">Kør eksternt program når torrent er færdig</translation>
     </message>
     <message>
         <source>IP Filtering</source>
@@ -1125,10 +1145,6 @@
         <translation>Anti-leech</translation>
     </message>
     <message>
-        <source>Enable OS cache:</source>
-        <translation>Aktivér OS-mellemlager:</translation>
-    </message>
-    <message>
         <source>When ratio reaches</source>
         <translation>Når deleforhold når</translation>
     </message>
@@ -1285,10 +1301,6 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Use piece extent affinity (requires libtorrent &gt;= 1.2.2):</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source>Stop tracker timeout:</source>
         <translation type="unfinished" />
     </message>
@@ -1369,10 +1381,6 @@
         <translation>Maksimum antal artikler pr. feed:</translation>
     </message>
     <message>
-        <source>Max concurrent HTTP announces (requires libtorrent &gt;= 1.2.7):</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
         <source> min</source>
         <translation> min</translation>
     </message>
@@ -1410,10 +1418,6 @@
     </message>
     <message>
         <source>Peer connection protocol:</source>
-        <translation type="unfinished" />
-    </message>
-    <message>
-        <source>Support internationalized domain name (IDN) (requires libtorrent &gt;= 1.2.12):</source>
         <translation type="unfinished" />
     </message>
     <message>
@@ -1502,7 +1506,7 @@
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished" />
+        <translation>Standard</translation>
     </message>
     <message>
         <source>POSIX-compliant</source>
@@ -1517,7 +1521,87 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Physical memory (RAM) usage limit:</source>
+        <source>Write-through (requires libtorrent &gt;= 2.0.6)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>It controls the internal state update interval which in turn will affect UI updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO read mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO write mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Use piece extent affinity:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Max concurrent HTTP announces:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Enable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Refresh interval:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Physical memory (RAM) usage limit (applied if libtorrent &gt;= 2.0):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ms</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Excluded file names</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Support internationalized domain name (IDN):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent finished</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Whitelist for filtering HTTP Host header values.
+In order to defend against DNS rebinding attack,
+you should put in domain names used by WebUI server.
+
+Use ';' to split multiple entries. Can use wildcard '*'.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS certificate should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Specify reverse proxy IPs (or subnets, e.g. 0.0.0.0/24) in order to use forwarded client address (X-Forwarded-For header). Use ';' to split multiple entries.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS key should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2208,10 +2292,6 @@
         <translation>Meddelelse</translation>
     </message>
     <message>
-        <source>Downloaded</source>
-        <translation type="vanished">Downloadet</translation>
-    </message>
-    <message>
         <source>Tracker URL:</source>
         <translation>Tracker-URL:</translation>
     </message>
@@ -2249,7 +2329,7 @@
     </message>
     <message>
         <source>Add a new tracker...</source>
-        <translation>Tilføj en ny tracker...</translation>
+        <translation type="vanished">Tilføj en ny tracker...</translation>
     </message>
     <message>
         <source>Edit tracker URL...</source>
@@ -2299,16 +2379,24 @@
         <source>Times Downloaded</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Add trackers...</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>TrackersAdditionDialog</name>
     <message>
         <source>Trackers addition dialog</source>
-        <translation>Tilføjelse af tracker-dialog</translation>
+        <translation type="vanished">Tilføjelse af tracker-dialog</translation>
     </message>
     <message>
         <source>List of trackers to add (one per line):</source>
         <translation>Liste over trackere der skal tilføjes (en pr. linje):</translation>
+    </message>
+    <message>
+        <source>Add trackers</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2438,7 +2526,7 @@
     <message>
         <source>Delete</source>
         <comment>Delete the torrent</comment>
-        <translation>Slet</translation>
+        <translation type="vanished">Slet</translation>
     </message>
     <message>
         <source>Limit share ratio...</source>
@@ -2516,7 +2604,7 @@
     </message>
     <message>
         <source>Force Recheck</source>
-        <translation>Tving gentjek</translation>
+        <translation type="vanished">Tving gentjek</translation>
     </message>
     <message>
         <source>New Category</source>
@@ -2598,6 +2686,10 @@
         <source>Export .torrent</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>UpDownRatioDialog</name>
@@ -2633,15 +2725,19 @@
     <name>confirmDeletionDlg</name>
     <message>
         <source>Deletion confirmation</source>
-        <translation>Bekræftelse for sletning</translation>
-    </message>
-    <message>
-        <source>Also delete the files on the hard disk</source>
-        <translation>Slet også filerne på harddisken</translation>
+        <translation type="vanished">Bekræftelse for sletning</translation>
     </message>
     <message>
         <source>Deletion confirmation - qBittorrent</source>
-        <translation>Bekræft sletning - qBittorrent</translation>
+        <translation type="vanished">Bekræft sletning - qBittorrent</translation>
+    </message>
+    <message>
+        <source>Also permanently delete the files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove torrent(s)</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2835,6 +2931,14 @@
         <source>showing</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Click the "Search plugins..." button at the bottom right of the window to install some.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There aren't any search plugins installed.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>PluginSelectDlg</name>
@@ -2960,7 +3064,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Slet torrents</translation>
+        <translation type="vanished">Slet torrents</translation>
     </message>
     <message>
         <source>Tag:</source>
@@ -2985,6 +3089,10 @@
     <message>
         <source>Remove tag</source>
         <translation>Fjern mærkat</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -3066,11 +3174,11 @@
     </message>
     <message>
         <source>The free IP to Country Lite database by DB-IP is used for resolving the countries of peers. The database is licensed under the Creative Commons Attribution 4.0 International License</source>
-        <translation type="unfinished" />
+        <translation>Den frie IP to Country Lite database af DB-IP anvendes til bestemmelse af fællers lande. Databasen er bevilliget under Creative Commons Attribution 4.0 international licens</translation>
     </message>
     <message>
         <source>Authors</source>
-        <translation type="unfinished" />
+        <translation>Forfattere</translation>
     </message>
     <message>
         <source>France</source>
@@ -3485,7 +3593,7 @@ Supports the formats: S01E01, 1x1, 2017.12.31 and 31.12.2017 (Date formats also 
     <name>TrackerFiltersList</name>
     <message>
         <source>Delete torrents</source>
-        <translation>Slet torrents</translation>
+        <translation type="vanished">Slet torrents</translation>
     </message>
     <message>
         <source>Resume torrents</source>
@@ -3502,6 +3610,10 @@ Supports the formats: S01E01, 1x1, 2017.12.31 and 31.12.2017 (Date formats also 
     <message>
         <source>Pause torrents</source>
         <translation>Sæt torrents på pause</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

@@ -32,7 +32,6 @@
 #include <QIcon>
 
 #include "base/bittorrent/session.h"
-#include "base/bittorrent/torrent.h"
 #include "base/global.h"
 #include "uithememanager.h"
 
@@ -40,8 +39,6 @@ class CategoryModelItem
 {
 public:
     CategoryModelItem()
-        : m_parent(nullptr)
-        , m_torrentsCount(0)
     {
     }
 
@@ -154,9 +151,9 @@ public:
     }
 
 private:
-    CategoryModelItem *m_parent;
+    CategoryModelItem *m_parent = nullptr;
     QString m_name;
-    int m_torrentsCount;
+    int m_torrentsCount = 0;
     QHash<QString, CategoryModelItem *> m_children;
     QStringList m_childUids;
 };
@@ -183,7 +180,7 @@ CategoryFilterModel::CategoryFilterModel(QObject *parent)
     connect(session, &Session::categoryRemoved, this, &CategoryFilterModel::categoryRemoved);
     connect(session, &Session::torrentCategoryChanged, this, &CategoryFilterModel::torrentCategoryChanged);
     connect(session, &Session::subcategoriesSupportChanged, this, &CategoryFilterModel::subcategoriesSupportChanged);
-    connect(session, &Session::torrentLoaded, this, &CategoryFilterModel::torrentAdded);
+    connect(session, &Session::torrentsLoaded, this, &CategoryFilterModel::torrentsLoaded);
     connect(session, &Session::torrentAboutToBeRemoved, this, &CategoryFilterModel::torrentAboutToBeRemoved);
 
     populate();
@@ -214,7 +211,7 @@ QVariant CategoryFilterModel::data(const QModelIndex &index, int role) const
 
     if ((index.column() == 0) && (role == Qt::DecorationRole))
     {
-        return UIThemeManager::instance()->getIcon(u"inode-directory"_qs);
+        return UIThemeManager::instance()->getIcon(u"view-categories"_qs);
     }
 
     if ((index.column() == 0) && (role == Qt::DisplayRole))
@@ -311,7 +308,7 @@ void CategoryFilterModel::categoryAdded(const QString &categoryName)
 
     if (m_isSubcategoriesEnabled)
     {
-        QStringList expanded = BitTorrent::Session::expandCategory(categoryName);
+        QStringList expanded = BitTorrent::Session::instance()->expandCategory(categoryName);
         if (expanded.count() > 1)
             parent = findItem(expanded[expanded.count() - 2]);
     }
@@ -335,13 +332,16 @@ void CategoryFilterModel::categoryRemoved(const QString &categoryName)
     }
 }
 
-void CategoryFilterModel::torrentAdded(BitTorrent::Torrent *const torrent)
+void CategoryFilterModel::torrentsLoaded(const QVector<BitTorrent::Torrent *> &torrents)
 {
-    CategoryModelItem *item = findItem(torrent->category());
-    Q_ASSERT(item);
+    for (const BitTorrent::Torrent *torrent : torrents)
+    {
+        CategoryModelItem *item = findItem(torrent->category());
+        Q_ASSERT(item);
 
-    item->increaseTorrentsCount();
-    m_rootItem->childAt(0)->increaseTorrentsCount();
+        item->increaseTorrentsCount();
+        m_rootItem->childAt(0)->increaseTorrentsCount();
+    }
 }
 
 void CategoryFilterModel::torrentAboutToBeRemoved(BitTorrent::Torrent *const torrent)
@@ -443,7 +443,7 @@ CategoryModelItem *CategoryFilterModel::findItem(const QString &fullName) const
         return m_rootItem->child(fullName);
 
     CategoryModelItem *item = m_rootItem;
-    for (const QString &subcat : asConst(BitTorrent::Session::expandCategory(fullName)))
+    for (const QString &subcat : asConst(BitTorrent::Session::instance()->expandCategory(fullName)))
     {
         const QString subcatName = shortName(subcat);
         if (!item->hasChild(subcatName)) return nullptr;

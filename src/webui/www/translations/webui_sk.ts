@@ -42,6 +42,14 @@
         <source>Don't create subfolder</source>
         <translation>Nevytvárať podpriečinok</translation>
     </message>
+    <message>
+        <source>Manual</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>CategoryFilterModel</name>
@@ -78,7 +86,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Zmazať torrenty</translation>
+        <translation type="vanished">Zmazať torrenty</translation>
     </message>
     <message>
         <source>New Category</source>
@@ -87,6 +95,10 @@
     <message>
         <source>Edit category...</source>
         <translation>Upraviť kategóriu...</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -272,10 +284,6 @@
         <translation>Nahrať lokálny torrent</translation>
     </message>
     <message>
-        <source>Are you sure you want to delete the selected torrents from the transfer list?</source>
-        <translation>Ste si istý, že chcete zmazať vybrané torrenty zo zoznamu prenosov?</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>Uložiť</translation>
     </message>
@@ -363,6 +371,10 @@
         <source>Original author</source>
         <translation>Pôvodný autor</translation>
     </message>
+    <message>
+        <source>Are you sure you want to remove the selected torrents from the transfer list?</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>MainWindow</name>
@@ -428,7 +440,7 @@
     </message>
     <message>
         <source>Delete</source>
-        <translation>Zmazať</translation>
+        <translation type="vanished">Zmazať</translation>
     </message>
     <message>
         <source>Pause All</source>
@@ -575,6 +587,14 @@
         <source>Filters Sidebar</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -616,7 +636,7 @@
     </message>
     <message>
         <source>Run external program on torrent completion</source>
-        <translation>Po dokončení sťahovania spustiť externý program</translation>
+        <translation type="vanished">Po dokončení sťahovania spustiť externý program</translation>
     </message>
     <message>
         <source>IP Filtering</source>
@@ -1125,10 +1145,6 @@
         <translation>Priorita pre začínajúcich a končiacich leecherov</translation>
     </message>
     <message>
-        <source>Enable OS cache:</source>
-        <translation>Zapnúť vyrovnávaciu pamäť systému:</translation>
-    </message>
-    <message>
         <source>When ratio reaches</source>
         <translation>Keď je dosiahnuté ratio</translation>
     </message>
@@ -1285,10 +1301,6 @@
         <translation>ban pre:</translation>
     </message>
     <message>
-        <source>Use piece extent affinity (requires libtorrent &gt;= 1.2.2):</source>
-        <translation>Použite rozšírenia o príbuznej časti (vyžaduje libtorrent&gt; = 1.2.2):</translation>
-    </message>
-    <message>
         <source>Stop tracker timeout:</source>
         <translation>Stop časový limit trackeru:</translation>
     </message>
@@ -1369,10 +1381,6 @@
         <translation>Maximálny počet článkov na kanál:</translation>
     </message>
     <message>
-        <source>Max concurrent HTTP announces (requires libtorrent &gt;= 1.2.7):</source>
-        <translation>Maximálny počet súbežných oznámení HTTP (vyžaduje libtorrent &gt;= 1.2.7):</translation>
-    </message>
-    <message>
         <source> min</source>
         <translation>min</translation>
     </message>
@@ -1411,10 +1419,6 @@
     <message>
         <source>Peer connection protocol:</source>
         <translation>Protokol partnerského pripojenia:</translation>
-    </message>
-    <message>
-        <source>Support internationalized domain name (IDN) (requires libtorrent &gt;= 1.2.12):</source>
-        <translation>Podpora internacionalizovaného názvu domény (IDN) (vyžaduje libtorrent &gt;= 1.2.12):</translation>
     </message>
     <message>
         <source>Torrent content layout:</source>
@@ -1502,7 +1506,7 @@
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished" />
+        <translation>Predvolený</translation>
     </message>
     <message>
         <source>POSIX-compliant</source>
@@ -1517,7 +1521,87 @@
         <translation type="unfinished" />
     </message>
     <message>
-        <source>Physical memory (RAM) usage limit:</source>
+        <source>Write-through (requires libtorrent &gt;= 2.0.6)</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>It controls the internal state update interval which in turn will affect UI updates</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO read mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Disk IO write mode:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Use piece extent affinity:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Max concurrent HTTP announces:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Enable OS cache</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Refresh interval:</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Physical memory (RAM) usage limit (applied if libtorrent &gt;= 2.0):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>ms</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Excluded file names</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Support internationalized domain name (IDN):</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent finished</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Whitelist for filtering HTTP Host header values.
+In order to defend against DNS rebinding attack,
+you should put in domain names used by WebUI server.
+
+Use ';' to split multiple entries. Can use wildcard '*'.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program on torrent added</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS certificate should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Specify reverse proxy IPs (or subnets, e.g. 0.0.0.0/24) in order to use forwarded client address (X-Forwarded-For header). Use ';' to split multiple entries.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>HTTPS key should not be empty</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Run external program</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2208,10 +2292,6 @@
         <translation>Správa</translation>
     </message>
     <message>
-        <source>Downloaded</source>
-        <translation type="vanished">Stiahnuté</translation>
-    </message>
-    <message>
         <source>Tracker URL:</source>
         <translation>URL trackera:</translation>
     </message>
@@ -2249,7 +2329,7 @@
     </message>
     <message>
         <source>Add a new tracker...</source>
-        <translation>Pridať nový tracker...</translation>
+        <translation type="vanished">Pridať nový tracker...</translation>
     </message>
     <message>
         <source>Edit tracker URL...</source>
@@ -2299,16 +2379,24 @@
         <source>Times Downloaded</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Add trackers...</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>TrackersAdditionDialog</name>
     <message>
         <source>Trackers addition dialog</source>
-        <translation>Dialóg pre pridanie torrentu</translation>
+        <translation type="vanished">Dialóg pre pridanie torrentu</translation>
     </message>
     <message>
         <source>List of trackers to add (one per line):</source>
         <translation>Pridať nasledovné trackery (jeden tracker na riadok):</translation>
+    </message>
+    <message>
+        <source>Add trackers</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2438,7 +2526,7 @@
     <message>
         <source>Delete</source>
         <comment>Delete the torrent</comment>
-        <translation>Zmazať</translation>
+        <translation type="vanished">Zmazať</translation>
     </message>
     <message>
         <source>Limit share ratio...</source>
@@ -2516,7 +2604,7 @@
     </message>
     <message>
         <source>Force Recheck</source>
-        <translation>Vynútiť opätovnú kontrolu</translation>
+        <translation type="vanished">Vynútiť opätovnú kontrolu</translation>
     </message>
     <message>
         <source>New Category</source>
@@ -2596,6 +2684,10 @@
     </message>
     <message>
         <source>Export .torrent</source>
+        <translation>Exportovať .torrent</translation>
+    </message>
+    <message>
+        <source>Remove</source>
         <translation type="unfinished" />
     </message>
 </context>
@@ -2633,15 +2725,19 @@
     <name>confirmDeletionDlg</name>
     <message>
         <source>Deletion confirmation</source>
-        <translation>Potvrdenie zmazania</translation>
-    </message>
-    <message>
-        <source>Also delete the files on the hard disk</source>
-        <translation>Zmazať aj súbory na pevnom disku</translation>
+        <translation type="vanished">Potvrdenie zmazania</translation>
     </message>
     <message>
         <source>Deletion confirmation - qBittorrent</source>
-        <translation>Potvrdenie zmazania - qBittorrent</translation>
+        <translation type="vanished">Potvrdenie zmazania - qBittorrent</translation>
+    </message>
+    <message>
+        <source>Also permanently delete the files</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Remove torrent(s)</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2835,6 +2931,14 @@
         <source>showing</source>
         <translation type="unfinished" />
     </message>
+    <message>
+        <source>Click the "Search plugins..." button at the bottom right of the window to install some.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>There aren't any search plugins installed.</source>
+        <translation type="unfinished" />
+    </message>
 </context>
 <context>
     <name>PluginSelectDlg</name>
@@ -2960,7 +3064,7 @@
     </message>
     <message>
         <source>Delete torrents</source>
-        <translation>Vymazať torrenty</translation>
+        <translation type="vanished">Vymazať torrenty</translation>
     </message>
     <message>
         <source>Tag:</source>
@@ -2985,6 +3089,10 @@
     <message>
         <source>Remove tag</source>
         <translation>Odstrániť značku</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -3078,7 +3186,7 @@
     </message>
     <message>
         <source>qBittorrent Mascot</source>
-        <translation type="unfinished" />
+        <translation>qBittorrent maskot</translation>
     </message>
     <message>
         <source>qBittorrent icon</source>
@@ -3486,7 +3594,7 @@ Podporuje formáty: S01E01, 1x1, 2017.12.31 a 31.12.2017 (podporuje aj formáty 
     <name>TrackerFiltersList</name>
     <message>
         <source>Delete torrents</source>
-        <translation>Zmazať torrenty</translation>
+        <translation type="vanished">Zmazať torrenty</translation>
     </message>
     <message>
         <source>Resume torrents</source>
@@ -3503,6 +3611,10 @@ Podporuje formáty: S01E01, 1x1, 2017.12.31 a 31.12.2017 (podporuje aj formáty 
     <message>
         <source>Pause torrents</source>
         <translation>Pozastaviť torrenty</translation>
+    </message>
+    <message>
+        <source>Remove torrents</source>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

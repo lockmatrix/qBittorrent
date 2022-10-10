@@ -1,6 +1,6 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2015, 2017  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2015-2022  Vladimir Golovnev <glassez@yandex.ru>
  * Copyright (C) 2010  Christophe Dumez <chris@qbittorrent.org>
  * Copyright (C) 2010  Arnaud Demaiziere <arnaud@qbittorrent.org>
  *
@@ -34,12 +34,12 @@
 #include <utility>
 #include <vector>
 
-#include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QUrl>
+#include <QVector>
 
 #include "base/asyncfilestorage.h"
 #include "base/global.h"
@@ -47,6 +47,7 @@
 #include "base/net/downloadmanager.h"
 #include "base/profile.h"
 #include "base/utils/fs.h"
+#include "feed_serializer.h"
 #include "rss_article.h"
 #include "rss_parser.h"
 #include "rss_session.h"
@@ -79,6 +80,11 @@ Feed::Feed(const QUuid &uid, const QString &url, const QString &path, Session *s
 
     m_iconPath = storageDir / Path(uidHex + u".ico");
 
+    m_serializer = new Private::FeedSerializer;
+    m_serializer->moveToThread(m_session->workingThread());
+    connect(this, &Feed::destroyed, m_serializer, &Private::FeedSerializer::deleteLater);
+    connect(m_serializer, &Private::FeedSerializer::loadingFinished, this, &Feed::handleArticleLoadFinished);
+
     m_parser = new Private::Parser(m_lastBuildDate);
     m_parser->moveToThread(m_session->workingThread());
     connect(this, &Feed::destroyed, m_parser, &Private::Parser::deleteLater);
@@ -98,6 +104,7 @@ Feed::Feed(const QUuid &uid, const QString &url, const QString &path, Session *s
 
 Feed::~Feed()
 {
+    store();
     emit aboutToBeDestroyed(this);
 }
 
@@ -130,6 +137,12 @@ void Feed::markAsRead()
 
 void Feed::refresh()
 {
+    if (!m_isInitialized)
+    {
+        m_pendingRefresh = true;
+        return;
+    }
+
     if (m_downloadHandler)
         m_downloadHandler->cancel();
 
@@ -162,7 +175,7 @@ QString Feed::title() const
 
 bool Feed::isLoading() const
 {
-    return m_isLoading;
+    return m_isLoading || !m_isInitialized;
 }
 
 QString Feed::lastBuildDate() const
@@ -209,7 +222,10 @@ void Feed::handleDownloadFinished(const Net::DownloadResult &result)
         LogMsg(tr("RSS feed at '%1' is successfully downloaded. Starting to parse it.")
                 .arg(result.url));
         // Parse the download RSS
-        m_parser->parse(result.data);
+        QMetaObject::invokeMethod(m_parser, [this, data = result.data]()
+        {
+            m_parser->parse(data);
+        });
     }
     else
     {
@@ -261,100 +277,30 @@ void Feed::handleParsingFinished(const RSS::Private::ParsingResult &result)
 
 void Feed::load()
 {
-    QFile file {(m_session->dataFileStorage()->storageDir() / m_dataFileName).data()};
-
-    if (!file.exists())
+    QMetaObject::invokeMethod(m_serializer, [this]()
     {
-        loadArticlesLegacy();
-        m_dirty = true;
-        store(); // convert to new format
-    }
-    else if (file.open(QFile::ReadOnly))
-    {
-        loadArticles(file.readAll());
-        file.close();
-    }
-    else
-    {
-        LogMsg(tr("Couldn't read RSS Session data from %1. Error: %2")
-               .arg(m_dataFileName.toString(), file.errorString())
-               , Log::WARNING);
-    }
-}
-
-void Feed::loadArticles(const QByteArray &data)
-{
-    QJsonParseError jsonError;
-    const QJsonDocument jsonDoc = QJsonDocument::fromJson(data, &jsonError);
-    if (jsonError.error != QJsonParseError::NoError)
-    {
-        LogMsg(tr("Couldn't parse RSS Session data. Error: %1").arg(jsonError.errorString())
-               , Log::WARNING);
-        return;
-    }
-
-    if (!jsonDoc.isArray())
-    {
-        LogMsg(tr("Couldn't load RSS Session data. Invalid data format."), Log::WARNING);
-        return;
-    }
-
-    const QJsonArray jsonArr = jsonDoc.array();
-    int i = -1;
-    for (const QJsonValue &jsonVal : jsonArr)
-    {
-        ++i;
-        if (!jsonVal.isObject())
-        {
-            LogMsg(tr("Couldn't load RSS article '%1#%2'. Invalid data format.").arg(m_url).arg(i)
-                   , Log::WARNING);
-            continue;
-        }
-
-        try
-        {
-            auto article = new Article(this, jsonVal.toObject());
-            if (!addArticle(article))
-                delete article;
-        }
-        catch (const RuntimeError &) {}
-    }
-}
-
-void Feed::loadArticlesLegacy()
-{
-    const SettingsPtr qBTRSSFeeds = Profile::instance()->applicationSettings(u"qBittorrent-rss-feeds"_qs);
-    const QVariantHash allOldItems = qBTRSSFeeds->value(u"old_items"_qs).toHash();
-
-    for (const QVariant &var : asConst(allOldItems.value(m_url).toList()))
-    {
-        auto hash = var.toHash();
-        // update legacy keys
-        hash[Article::KeyLink] = hash.take(u"news_link"_qs);
-        hash[Article::KeyTorrentURL] = hash.take(u"torrent_url"_qs);
-        hash[Article::KeyIsRead] = hash.take(u"read"_qs);
-        try
-        {
-            auto article = new Article(this, hash);
-            if (!addArticle(article))
-                delete article;
-        }
-        catch (const RuntimeError &) {}
-    }
+        m_serializer->load((m_session->dataFileStorage()->storageDir() / m_dataFileName), m_url);
+    });
 }
 
 void Feed::store()
 {
-    if (!m_dirty) return;
+    if (!m_dirty)
+        return;
 
     m_dirty = false;
     m_savingTimer.stop();
 
-    QJsonArray jsonArr;
-    for (Article *article :asConst(m_articles))
-        jsonArr << article->toJsonObject();
+    QVector<QVariantHash> articlesData;
+    articlesData.reserve(m_articles.size());
 
-    m_session->dataFileStorage()->store(m_dataFileName, QJsonDocument(jsonArr).toJson());
+    for (Article *article :asConst(m_articles))
+        articlesData.push_back(article->data());
+
+    QMetaObject::invokeMethod(m_serializer, [this, articlesData]()
+    {
+        m_serializer->store((m_session->dataFileStorage()->storageDir() / m_dataFileName), articlesData);
+    });
 }
 
 void Feed::storeDeferred()
@@ -363,18 +309,18 @@ void Feed::storeDeferred()
         m_savingTimer.start(5 * 1000, this);
 }
 
-bool Feed::addArticle(Article *article)
+bool Feed::addArticle(const QVariantHash &articleData)
 {
-    Q_ASSERT(article);
-    Q_ASSERT(!m_articles.contains(article->guid()));
+    Q_ASSERT(!m_articles.contains(articleData.value(Article::KeyId).toString()));
 
     // Insertion sort
     const int maxArticles = m_session->maxArticlesPerFeed();
     const auto lowerBound = std::lower_bound(m_articlesByDate.begin(), m_articlesByDate.end()
-                                       , article->date(), Article::articleDateRecentThan);
+                                       , articleData.value(Article::KeyDate).toDateTime(), Article::articleDateRecentThan);
     if ((lowerBound - m_articlesByDate.begin()) >= maxArticles)
         return false; // we reach max articles
 
+    auto *article = new Article(this, articleData);
     m_articles[article->guid()] = article;
     m_articlesByDate.insert(lowerBound, article);
     if (!article->isRead())
@@ -491,7 +437,7 @@ int Feed::updateArticles(const QList<QVariantHash> &loadedArticles)
     {
         if (a.second)
         {
-            addArticle(new Article {this, *a.second});
+            addArticle(*a.second);
             ++newArticlesCount;
         }
     });
@@ -519,7 +465,12 @@ QJsonValue Feed::toJsonValue(const bool withData) const
 
         QJsonArray jsonArr;
         for (Article *article : asConst(m_articles))
-            jsonArr << article->toJsonObject();
+        {
+            auto articleObj = QJsonObject::fromVariantHash(article->data());
+            // JSON object doesn't support DateTime so we need to convert it
+            articleObj[Article::KeyDate] = article->date().toString(Qt::RFC2822Date);
+            jsonArr.append(articleObj);
+        }
         jsonObj.insert(KEY_ARTICLES, jsonArr);
     }
 
@@ -546,8 +497,54 @@ void Feed::handleArticleRead(Article *article)
     storeDeferred();
 }
 
+void Feed::handleArticleLoadFinished(QVector<QVariantHash> articles)
+{
+    Q_ASSERT(m_articles.isEmpty());
+    Q_ASSERT(m_unreadCount == 0);
+
+    const int maxArticles = m_session->maxArticlesPerFeed();
+    if (articles.size() > maxArticles)
+        articles.resize(maxArticles);
+
+    m_articles.reserve(articles.size());
+    m_articlesByDate.reserve(articles.size());
+
+    for (const QVariantHash &articleData : articles)
+    {
+        const auto articleID = articleData.value(Article::KeyId).toString();
+        // TODO: use [[unlikely]] in C++20
+        if (Q_UNLIKELY(m_articles.contains(articleID)))
+            continue;
+
+        auto *article = new Article(this, articleData);
+        m_articles[articleID] = article;
+        m_articlesByDate.append(article);
+        if (!article->isRead())
+        {
+            ++m_unreadCount;
+            connect(article, &Article::read, this, &Feed::handleArticleRead);
+        }
+
+        emit newArticle(article);
+    }
+
+    if (m_unreadCount > 0)
+        emit unreadCountChanged(this);
+
+    m_isInitialized = true;
+    emit stateChanged(this);
+
+    if (m_pendingRefresh)
+    {
+        m_pendingRefresh = false;
+        refresh();
+    }
+}
+
 void Feed::cleanup()
 {
+    m_dirty = false;
+    m_savingTimer.stop();
     Utils::Fs::removeFile(m_session->dataFileStorage()->storageDir() / m_dataFileName);
     Utils::Fs::removeFile(m_iconPath);
 }

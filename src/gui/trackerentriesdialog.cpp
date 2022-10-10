@@ -80,27 +80,7 @@ void TrackerEntriesDialog::setTrackers(const QVector<BitTorrent::TrackerEntry> &
 
 QVector<BitTorrent::TrackerEntry> TrackerEntriesDialog::trackers() const
 {
-    const QString plainText = m_ui->plainTextEdit->toPlainText();
-    const QList<QStringView> lines = QStringView(plainText).split(u'\n');
-
-    QVector<BitTorrent::TrackerEntry> entries;
-    entries.reserve(lines.size());
-
-    int tier = 0;
-    for (QStringView line : lines)
-    {
-        line = line.trimmed();
-
-        if (line.isEmpty())
-        {
-            ++tier;
-            continue;
-        }
-
-        entries.append({line.toString(), tier});
-    }
-
-    return entries;
+    return BitTorrent::parseTrackerEntries(m_ui->plainTextEdit->toPlainText());
 }
 
 void TrackerEntriesDialog::saveSettings()
@@ -110,5 +90,6 @@ void TrackerEntriesDialog::saveSettings()
 
 void TrackerEntriesDialog::loadSettings()
 {
-    resize(m_storeDialogSize);
+    if (const QSize dialogSize = m_storeDialogSize; dialogSize.isValid())
+        resize(dialogSize);
 }

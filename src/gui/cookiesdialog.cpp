@@ -52,7 +52,7 @@ CookiesDialog::CookiesDialog(QWidget *parent)
 {
     m_ui->setupUi(this);
 
-    setWindowIcon(UIThemeManager::instance()->getIcon(u"preferences-web-browser-cookies"_qs));
+    setWindowIcon(UIThemeManager::instance()->getIcon(u"browser-cookies"_qs));
     m_ui->buttonAdd->setIcon(UIThemeManager::instance()->getIcon(u"list-add"_qs));
     m_ui->buttonDelete->setIcon(UIThemeManager::instance()->getIcon(u"list-remove"_qs));
     m_ui->buttonAdd->setIconSize(Utils::Gui::mediumIconSize());
@@ -64,7 +64,9 @@ CookiesDialog::CookiesDialog(QWidget *parent)
                     m_cookiesModel->index(0, 0),
                     QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 
-    resize(m_storeDialogSize);
+    if (const QSize dialogSize = m_storeDialogSize; dialogSize.isValid())
+        resize(dialogSize);
+
     m_ui->treeView->header()->restoreState(m_storeViewState);
 }
 

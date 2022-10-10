@@ -29,6 +29,7 @@
 
 #include "automatedrssdownloader.h"
 
+#include <QtGlobal>
 #include <QCursor>
 #include <QFileDialog>
 #include <QMenu>
@@ -41,7 +42,6 @@
 #include "base/bittorrent/session.h"
 #include "base/global.h"
 #include "base/path.h"
-#include "base/preferences.h"
 #include "base/rss/rss_article.h"
 #include "base/rss/rss_autodownloader.h"
 #include "base/rss/rss_feed.h"
@@ -65,10 +65,17 @@ AutomatedRssDownloader::AutomatedRssDownloader(QWidget *parent)
     , m_formatFilterLegacy(u"%1 (*%2)"_qs.arg(tr("Rules (legacy)"), EXT_LEGACY))
     , m_ui(new Ui::AutomatedRssDownloader)
     , m_currentRuleItem(nullptr)
+    , m_storeDialogSize {u"RssFeedDownloader/geometrySize"_qs}
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    , m_storeHSplitterSize {u"GUI/Qt6/RSSFeedDownloader/HSplitterSizes"_qs}
+#else
+    , m_storeHSplitterSize {u"RssFeedDownloader/qt5/hsplitterSizes"_qs}
+#endif
+
 {
     m_ui->setupUi(this);
     // Icons
-    m_ui->removeRuleBtn->setIcon(UIThemeManager::instance()->getIcon(u"list-remove"_qs));
+    m_ui->removeRuleBtn->setIcon(UIThemeManager::instance()->getIcon(u"edit-clear"_qs));
     m_ui->addRuleBtn->setIcon(UIThemeManager::instance()->getIcon(u"list-add"_qs));
     m_ui->addCategoryBtn->setIcon(UIThemeManager::instance()->getIcon(u"list-add"_qs));
 
@@ -160,16 +167,17 @@ AutomatedRssDownloader::~AutomatedRssDownloader()
 
 void AutomatedRssDownloader::loadSettings()
 {
-    const auto *pref = Preferences::instance();
-    resize(pref->getRssGeometrySize());
-    m_ui->hsplitter->restoreState(pref->getRssHSplitterSizes());
+    if (const QSize dialogSize = m_storeDialogSize; dialogSize.isValid())
+        resize(dialogSize);
+
+    if (const QByteArray hSplitterSize = m_storeHSplitterSize; !hSplitterSize.isEmpty())
+        m_ui->hsplitter->restoreState(hSplitterSize);
 }
 
 void AutomatedRssDownloader::saveSettings()
 {
-    Preferences *const pref = Preferences::instance();
-    pref->setRssGeometrySize(size());
-    pref->setRssHSplitterSizes(m_ui->hsplitter->saveState());
+    m_storeDialogSize = size();
+    m_storeHSplitterSize = m_ui->hsplitter->saveState();
 }
 
 void AutomatedRssDownloader::createRuleItem(const RSS::AutoDownloadRule &rule)
@@ -513,7 +521,7 @@ void AutomatedRssDownloader::displayRulesListMenu()
     {
         if (selection.count() == 1)
         {
-            menu->addAction(UIThemeManager::instance()->getIcon(u"list-remove"_qs), tr("Delete rule")
+            menu->addAction(UIThemeManager::instance()->getIcon(u"edit-clear"_qs), tr("Delete rule")
                 , this, &AutomatedRssDownloader::on_removeRuleBtn_clicked);
             menu->addSeparator();
             menu->addAction(UIThemeManager::instance()->getIcon(u"edit-rename"_qs), tr("Rename rule...")
@@ -521,7 +529,7 @@ void AutomatedRssDownloader::displayRulesListMenu()
         }
         else
         {
-            menu->addAction(UIThemeManager::instance()->getIcon(u"list-remove"_qs), tr("Delete selected rules")
+            menu->addAction(UIThemeManager::instance()->getIcon(u"edit-clear"_qs), tr("Delete selected rules")
                 , this, &AutomatedRssDownloader::on_removeRuleBtn_clicked);
         }
 
@@ -656,7 +664,7 @@ void AutomatedRssDownloader::addFeedArticlesToTree(RSS::Feed *feed, const QStrin
         QFont f = treeFeedItem->font(0);
         f.setBold(true);
         treeFeedItem->setFont(0, f);
-        treeFeedItem->setData(0, Qt::DecorationRole, UIThemeManager::instance()->getIcon(u"inode-directory"_qs));
+        treeFeedItem->setData(0, Qt::DecorationRole, UIThemeManager::instance()->getIcon(u"directory"_qs));
         treeFeedItem->setData(0, Qt::UserRole, feed->url());
         m_ui->treeMatchingArticles->addTopLevelItem(treeFeedItem);
     }
@@ -751,7 +759,7 @@ void AutomatedRssDownloader::updateMustLineValidity()
     else
     {
         m_ui->lineContains->setStyleSheet(u"QLineEdit { color: #ff0000; }"_qs);
-        m_ui->labelMustStat->setPixmap(UIThemeManager::instance()->getIcon(u"task-attention"_qs).pixmap(16, 16));
+        m_ui->labelMustStat->setPixmap(UIThemeManager::instance()->getIcon(u"dialog-warning"_qs).pixmap(16, 16));
         m_ui->labelMustStat->setToolTip(error);
     }
 }
@@ -798,7 +806,7 @@ void AutomatedRssDownloader::updateMustNotLineValidity()
     else
     {
         m_ui->lineNotContains->setStyleSheet(u"QLineEdit { color: #ff0000; }"_qs);
-        m_ui->labelMustNotStat->setPixmap(UIThemeManager::instance()->getIcon(u"task-attention"_qs).pixmap(16, 16));
+        m_ui->labelMustNotStat->setPixmap(UIThemeManager::instance()->getIcon(u"dialog-warning"_qs).pixmap(16, 16));
         m_ui->labelMustNotStat->setToolTip(error);
     }
 }
@@ -816,7 +824,7 @@ void AutomatedRssDownloader::updateEpisodeFilterValidity()
     else
     {
         m_ui->lineEFilter->setStyleSheet(u"QLineEdit { color: #ff0000; }"_qs);
-        m_ui->labelEpFilterStat->setPixmap(UIThemeManager::instance()->getIcon(u"task-attention"_qs).pixmap(16, 16));
+        m_ui->labelEpFilterStat->setPixmap(UIThemeManager::instance()->getIcon(u"dialog-warning"_qs).pixmap(16, 16));
     }
 }
 

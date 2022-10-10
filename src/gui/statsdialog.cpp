@@ -48,7 +48,7 @@ StatsDialog::StatsDialog(QWidget *parent)
     , m_storeDialogSize(SETTINGS_KEY(u"Size"_qs))
 {
     m_ui->setupUi(this);
-    setAttribute(Qt::WA_DeleteOnClose);
+
     connect(m_ui->buttonBox, &QDialogButtonBox::accepted, this, &StatsDialog::close);
 
     update();
@@ -60,8 +60,8 @@ StatsDialog::StatsDialog(QWidget *parent)
     m_ui->labelCacheHits->hide();
 #endif
 
-    resize(m_storeDialogSize);
-    show();
+    if (const QSize dialogSize = m_storeDialogSize; dialogSize.isValid())
+        resize(dialogSize);
 }
 
 StatsDialog::~StatsDialog()
@@ -76,8 +76,8 @@ void StatsDialog::update()
     const BitTorrent::CacheStatus &cs = BitTorrent::Session::instance()->cacheStatus();
 
     // All-time DL/UL
-    const qint64 atd = BitTorrent::Session::instance()->getAlltimeDL();
-    const qint64 atu = BitTorrent::Session::instance()->getAlltimeUL();
+    const qint64 atd = ss.allTimeDownload;
+    const qint64 atu = ss.allTimeUpload;
     m_ui->labelAlltimeDL->setText(Utils::Misc::friendlyUnit(atd));
     m_ui->labelAlltimeUL->setText(Utils::Misc::friendlyUnit(atu));
     // Total waste (this session)

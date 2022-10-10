@@ -46,6 +46,7 @@
 #include "base/bittorrent/torrent.h"
 #include "base/path.h"
 #include "base/preferences.h"
+#include "base/types.h"
 #include "base/unicodestrings.h"
 #include "base/utils/fs.h"
 #include "base/utils/misc.h"
@@ -73,11 +74,11 @@
 PropertiesWidget::PropertiesWidget(QWidget *parent)
     : QWidget(parent)
     , m_ui(new Ui::PropertiesWidget())
-    , m_torrent(nullptr)
-    , m_handleWidth(-1)
 {
     m_ui->setupUi(this);
+#ifndef Q_OS_MACOS
     setAutoFillBackground(true);
+#endif
 
     m_state = VISIBLE;
 
@@ -648,7 +649,7 @@ void PropertiesWidget::displayFilesListMenu()
 
         menu->addAction(UIThemeManager::instance()->getIcon(u"folder-documents"_qs), tr("Open")
             , this, [this, index]() { openItem(index); });
-        menu->addAction(UIThemeManager::instance()->getIcon(u"inode-directory"_qs), tr("Open Containing Folder")
+        menu->addAction(UIThemeManager::instance()->getIcon(u"directory"_qs), tr("Open containing folder")
             , this, [this, index]() { openParentFolder(index); });
         menu->addAction(UIThemeManager::instance()->getIcon(u"edit-rename"_qs), tr("Rename...")
             , this, [this]() { m_ui->filesList->renameSelectedFile(*m_torrent); });
@@ -749,7 +750,7 @@ void PropertiesWidget::displayWebSeedListMenu()
 
     if (!rows.isEmpty())
     {
-        menu->addAction(UIThemeManager::instance()->getIcon(u"list-remove"_qs), tr("Remove Web seed")
+        menu->addAction(UIThemeManager::instance()->getIcon(u"edit-clear"_qs), tr("Remove Web seed")
             , this, &PropertiesWidget::deleteSelectedUrlSeeds);
         menu->addSeparator();
         menu->addAction(UIThemeManager::instance()->getIcon(u"edit-copy"_qs), tr("Copy Web seed URL")

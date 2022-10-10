@@ -31,6 +31,7 @@
 #include "appcontroller.h"
 
 #include <algorithm>
+#include <chrono>
 
 #include <QCoreApplication>
 #include <QDebug>
@@ -62,6 +63,8 @@
 #include "base/version.h"
 #include "../webapplication.h"
 
+using namespace std::chrono_literals;
+
 void AppController::webapiVersionAction()
 {
     setResult(API_VERSION.toString());
@@ -88,12 +91,13 @@ void AppController::buildInfoAction()
 
 void AppController::shutdownAction()
 {
-    qDebug() << "Shutdown request from Web UI";
-
-    // Special case handling for shutdown, we
+    // Special handling for shutdown, we
     // need to reply to the Web UI before
     // actually shutting down.
-    QTimer::singleShot(100, qApp, &QCoreApplication::quit);
+    QTimer::singleShot(100ms, qApp, []()
+    {
+        QCoreApplication::exit();
+    });
 }
 
 void AppController::preferencesAction()
@@ -141,6 +145,10 @@ void AppController::preferencesAction()
     data[u"scan_dirs"_qs] = nativeDirs;
     // === END DEPRECATED CODE === //
 
+    // Excluded file names
+    data[u"excluded_file_names_enabled"_qs] = session->isExcludedFileNamesEnabled();
+    data[u"excluded_file_names"_qs] = session->excludedFileNames().join(u'\n');
+
     // Email notification upon download completion
     data[u"mail_notification_enabled"_qs] = pref->isMailNotificationEnabled();
     data[u"mail_notification_sender"_qs] = pref->getMailNotificationSender();
@@ -150,9 +158,12 @@ void AppController::preferencesAction()
     data[u"mail_notification_auth_enabled"_qs] = pref->getMailNotificationSMTPAuth();
     data[u"mail_notification_username"_qs] = pref->getMailNotificationSMTPUsername();
     data[u"mail_notification_password"_qs] = pref->getMailNotificationSMTPPassword();
-    // Run an external program on torrent completion
-    data[u"autorun_enabled"_qs] = pref->isAutoRunEnabled();
-    data[u"autorun_program"_qs] = pref->getAutoRunProgram();
+    // Run an external program on torrent added
+    data[u"autorun_on_torrent_added_enabled"_qs] = pref->isAutoRunOnTorrentAddedEnabled();
+    data[u"autorun_on_torrent_added_program"_qs] = pref->getAutoRunOnTorrentAddedProgram();
+    // Run an external program on torrent finished
+    data[u"autorun_enabled"_qs] = pref->isAutoRunOnTorrentFinishedEnabled();
+    data[u"autorun_program"_qs] = pref->getAutoRunOnTorrentFinishedProgram();
 
     // Connection
     // Listening Port
@@ -287,7 +298,7 @@ void AppController::preferencesAction()
     // Advanced settings
     // qBitorrent preferences
     // Physical memory (RAM) usage limit
-    data[u"memory_working_set_limit"_qs] = dynamic_cast<IApplication *>(QCoreApplication::instance())->memoryWorkingSetLimit();
+    data[u"memory_working_set_limit"_qs] = app()->memoryWorkingSetLimit();
     // Current network interface
     data[u"current_network_interface"_qs] = session->networkInterface();
     // Current network interface address
@@ -296,6 +307,8 @@ void AppController::preferencesAction()
     data[u"save_resume_data_interval"_qs] = session->saveResumeDataInterval();
     // Recheck completed torrents
     data[u"recheck_completed_torrents"_qs] = pref->recheckTorrentsOnCompletion();
+    // Refresh interval
+    data[u"refresh_interval"_qs] = session->refreshInterval();
     // Resolve peer countries
     data[u"resolve_peer_countries"_qs] = pref->resolvePeerCountries();
     // Reannounce to all trackers when ip/port changed
@@ -317,8 +330,10 @@ void AppController::preferencesAction()
     data[u"disk_queue_size"_qs] = session->diskQueueSize();
     // Disk IO Type
     data[u"disk_io_type"_qs] = static_cast<int>(session->diskIOType());
-    // Enable OS cache
-    data[u"enable_os_cache"_qs] = session->useOSCache();
+    // Disk IO read mode
+    data[u"disk_io_read_mode"_qs] = static_cast<int>(session->diskIOReadMode());
+    // Disk IO write mode
+    data[u"disk_io_write_mode"_qs] = static_cast<int>(session->diskIOWriteMode());
     // Coalesce reads & writes
     data[u"enable_coalesce_read_write"_qs] = session->isCoalesceReadWriteEnabled();
     // Piece Extent Affinity
@@ -476,6 +491,12 @@ void AppController::setPreferencesAction()
     }
     // === END DEPRECATED CODE === //
 
+    // Excluded file names
+    if (hasKey(u"excluded_file_names_enabled"_qs))
+        session->setExcludedFileNamesEnabled(it.value().toBool());
+    if (hasKey(u"excluded_file_names"_qs))
+        session->setExcludedFileNames(it.value().toString().split(u'\n'));
+
     // Email notification upon download completion
     if (hasKey(u"mail_notification_enabled"_qs))
         pref->setMailNotificationEnabled(it.value().toBool());
@@ -493,11 +514,16 @@ void AppController::setPreferencesAction()
         pref->setMailNotificationSMTPUsername(it.value().toString());
     if (hasKey(u"mail_notification_password"_qs))
         pref->setMailNotificationSMTPPassword(it.value().toString());
-    // Run an external program on torrent completion
+    // Run an external program on torrent added
+    if (hasKey(u"autorun_on_torrent_added_enabled"_qs))
+        pref->setAutoRunOnTorrentAddedEnabled(it.value().toBool());
+    if (hasKey(u"autorun_on_torrent_added_program"_qs))
+        pref->setAutoRunOnTorrentAddedProgram(it.value().toString());
+    // Run an external program on torrent finished
     if (hasKey(u"autorun_enabled"_qs))
-        pref->setAutoRunEnabled(it.value().toBool());
+        pref->setAutoRunOnTorrentFinishedEnabled(it.value().toBool());
     if (hasKey(u"autorun_program"_qs))
-        pref->setAutoRunProgram(it.value().toString());
+        pref->setAutoRunOnTorrentFinishedProgram(it.value().toString());
 
     // Connection
     // Listening Port
@@ -745,7 +771,7 @@ void AppController::setPreferencesAction()
     // qBittorrent preferences
     // Physical memory (RAM) usage limit
     if (hasKey(u"memory_working_set_limit"_qs))
-        dynamic_cast<IApplication *>(QCoreApplication::instance())->setMemoryWorkingSetLimit(it.value().toInt());
+        app()->setMemoryWorkingSetLimit(it.value().toInt());
     // Current network interface
     if (hasKey(u"current_network_interface"_qs))
     {
@@ -773,6 +799,9 @@ void AppController::setPreferencesAction()
     // Recheck completed torrents
     if (hasKey(u"recheck_completed_torrents"_qs))
         pref->recheckTorrentsOnCompletion(it.value().toBool());
+    // Refresh interval
+    if (hasKey(u"refresh_interval"_qs))
+        session->setRefreshInterval(it.value().toInt());
     // Resolve peer countries
     if (hasKey(u"resolve_peer_countries"_qs))
         pref->resolvePeerCountries(it.value().toBool());
@@ -804,9 +833,12 @@ void AppController::setPreferencesAction()
     // Disk IO Type
     if (hasKey(u"disk_io_type"_qs))
         session->setDiskIOType(static_cast<BitTorrent::DiskIOType>(it.value().toInt()));
-    // Enable OS cache
-    if (hasKey(u"enable_os_cache"_qs))
-        session->setUseOSCache(it.value().toBool());
+    // Disk IO read mode
+    if (hasKey(u"disk_io_read_mode"_qs))
+        session->setDiskIOReadMode(static_cast<BitTorrent::DiskIOReadMode>(it.value().toInt()));
+    // Disk IO write mode
+    if (hasKey(u"disk_io_write_mode"_qs))
+        session->setDiskIOWriteMode(static_cast<BitTorrent::DiskIOWriteMode>(it.value().toInt()));
     // Coalesce reads & writes
     if (hasKey(u"enable_coalesce_read_write"_qs))
         session->setCoalesceReadWriteEnabled(it.value().toBool());

@@ -47,6 +47,7 @@
 #include "base/global.h"
 #include "base/logger.h"
 #include "base/preferences.h"
+#include "base/utils/string.h"
 
 namespace
 {
@@ -102,9 +103,6 @@ using namespace Net;
 
 Smtp::Smtp(QObject *parent)
     : QObject(parent)
-    , m_state(Init)
-    , m_useSsl(false)
-    , m_authType(AuthPlain)
 {
     static bool needToRegisterMetaType = true;
 
@@ -140,7 +138,7 @@ void Smtp::sendMail(const QString &from, const QString &to, const QString &subje
 {
     const Preferences *const pref = Preferences::instance();
     m_message = "Date: " + getCurrentDateTime().toLatin1() + "\r\n"
-                + encodeMimeHeader(u"From"_qs, from)
+                + encodeMimeHeader(u"From"_qs, u"qBittorrent <%1>"_qs.arg(from))
                 + encodeMimeHeader(u"Subject"_qs, subject)
                 + encodeMimeHeader(u"To"_qs, to)
                 + "MIME-Version: 1.0\r\n"
@@ -163,16 +161,20 @@ void Smtp::sendMail(const QString &from, const QString &to, const QString &subje
     }
 
     // Connect to SMTP server
+    const QStringList serverEndpoint = pref->getMailNotificationSMTP().split(u':');
+    const QString serverAddress = serverEndpoint[0];
+    const std::optional<int> serverPort = Utils::String::parseInt(serverEndpoint.value(1));
+
 #ifndef QT_NO_OPENSSL
     if (pref->getMailNotificationSMTPSSL())
     {
-        m_socket->connectToHostEncrypted(pref->getMailNotificationSMTP(), DEFAULT_PORT_SSL);
+        m_socket->connectToHostEncrypted(serverAddress, serverPort.value_or(DEFAULT_PORT_SSL));
         m_useSsl = true;
     }
     else
     {
 #endif
-    m_socket->connectToHost(pref->getMailNotificationSMTP(), DEFAULT_PORT);
+    m_socket->connectToHost(serverAddress, serverPort.value_or(DEFAULT_PORT));
     m_useSsl = false;
 #ifndef QT_NO_OPENSSL
     }
@@ -558,7 +560,7 @@ void Smtp::authLogin()
 void Smtp::logError(const QString &msg)
 {
     qDebug() << "Email Notification Error:" << msg;
-    Logger::instance()->addMessage(tr("Email Notification Error: %1").arg(msg), Log::WARNING);
+    LogMsg(tr("Email Notification Error: %1").arg(msg), Log::WARNING);
 }
 
 QString Smtp::getCurrentDateTime() const

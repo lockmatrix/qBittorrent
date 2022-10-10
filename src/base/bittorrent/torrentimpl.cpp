@@ -67,7 +67,7 @@
 #include "lttypecast.h"
 #include "peeraddress.h"
 #include "peerinfo.h"
-#include "session.h"
+#include "sessionimpl.h"
 
 using namespace BitTorrent;
 
@@ -216,26 +216,6 @@ namespace
         }
     }
 
-    void initializeStatus(lt::torrent_status &status, const lt::add_torrent_params &params)
-    {
-        status.flags = params.flags;
-        status.active_duration = lt::seconds {params.active_time};
-        status.finished_duration = lt::seconds {params.finished_time};
-        status.num_complete = params.num_complete;
-        status.num_incomplete = params.num_incomplete;
-        status.all_time_download = params.total_downloaded;
-        status.all_time_upload = params.total_uploaded;
-        status.added_time = params.added_time;
-        status.last_seen_complete = params.last_seen_complete;
-        status.last_download = lt::time_point {lt::seconds {params.last_download}};
-        status.last_upload = lt::time_point {lt::seconds {params.last_upload}};
-        status.completed_time = params.completed_time;
-        status.save_path = params.save_path;
-        status.connections_limit = params.max_connections;
-        status.pieces = params.have_pieces;
-        status.verified_pieces = params.verified_pieces;
-    }
-
     template <typename Vector>
     Vector resized(const Vector &inVector, const typename Vector::size_type size, const typename Vector::value_type &defaultValue)
     {
@@ -243,11 +223,18 @@ namespace
         outVector.resize(size, defaultValue);
         return outVector;
     }
+
+    // This is an imitation of limit normalization performed by libtorrent itself.
+    // We need perform it to keep cached values in line with the ones used by libtorrent.
+    int cleanLimitValue(const int value)
+    {
+        return ((value < 0) || (value == std::numeric_limits<int>::max())) ? 0 : value;
+    }
 }
 
 // TorrentImpl
 
-TorrentImpl::TorrentImpl(Session *session, lt::session *nativeSession
+TorrentImpl::TorrentImpl(SessionImpl *session, lt::session *nativeSession
                                      , const lt::torrent_handle &nativeHandle, const LoadTorrentParams &params)
     : QObject(session)
     , m_session(session)
@@ -272,6 +259,8 @@ TorrentImpl::TorrentImpl(Session *session, lt::session *nativeSession
     , m_useAutoTMM(params.useAutoTMM)
     , m_isStopped(params.stopped)
     , m_ltAddTorrentParams(params.ltAddTorrentParams)
+    , m_downloadLimit(cleanLimitValue(m_ltAddTorrentParams.download_limit))
+    , m_uploadLimit(cleanLimitValue(m_ltAddTorrentParams.upload_limit))
 {
     if (m_ltAddTorrentParams.ti)
     {
@@ -306,12 +295,14 @@ TorrentImpl::TorrentImpl(Session *session, lt::session *nativeSession
         }
     }
 
-    const auto extensionData = static_cast<ExtensionData *>(m_ltAddTorrentParams.userdata);
+    setStopCondition(params.stopCondition);
+
+    const auto *extensionData = static_cast<ExtensionData *>(m_ltAddTorrentParams.userdata);
     m_trackerEntries.reserve(static_cast<decltype(m_trackerEntries)::size_type>(extensionData->trackers.size()));
     for (const lt::announce_entry &announceEntry : extensionData->trackers)
         m_trackerEntries.append({QString::fromStdString(announceEntry.url), announceEntry.tier});
+    m_nativeStatus = extensionData->status;
 
-    initializeStatus(m_nativeStatus, m_ltAddTorrentParams);
     updateState();
 
     if (hasMetadata())
@@ -515,6 +506,9 @@ void TorrentImpl::setAutoTMMEnabled(bool enabled)
 
 Path TorrentImpl::actualStorageLocation() const
 {
+    if (!hasMetadata())
+        return {};
+
     return Path(m_nativeStatus.save_path);
 }
 
@@ -551,6 +545,7 @@ void TorrentImpl::addTrackers(QVector<TrackerEntry> trackers)
     m_trackerEntries.append(trackers);
     std::sort(m_trackerEntries.begin(), m_trackerEntries.end()
         , [](const TrackerEntry &lhs, const TrackerEntry &rhs) { return lhs.tier < rhs.tier; });
+
     m_session->handleTorrentNeedSaveResumeData(this);
     m_session->handleTorrentTrackersAdded(this, trackers);
 }
@@ -572,6 +567,7 @@ void TorrentImpl::removeTrackers(const QStringList &trackers)
     if (!removedTrackers.isEmpty())
     {
         m_nativeHandle.replace_trackers(nativeTrackers);
+
         m_session->handleTorrentNeedSaveResumeData(this);
         m_session->handleTorrentTrackersRemoved(this, removedTrackers);
     }
@@ -590,12 +586,13 @@ void TorrentImpl::replaceTrackers(QVector<TrackerEntry> trackers)
         nativeTrackers.emplace_back(makeNativeAnnounceEntry(tracker.url, tracker.tier));
 
     m_nativeHandle.replace_trackers(nativeTrackers);
+    m_trackerEntries = trackers;
+
     // Clear the peer list if it's a private torrent since
     // we do not want to keep connecting with peers from old tracker.
     if (isPrivate())
         clearPeers();
 
-    m_trackerEntries = trackers;
     m_session->handleTorrentNeedSaveResumeData(this);
     m_session->handleTorrentTrackersChanged(this);
 }
@@ -690,7 +687,7 @@ bool TorrentImpl::connectPeer(const PeerAddress &peerAddress)
 
 bool TorrentImpl::needSaveResumeData() const
 {
-    return m_nativeHandle.need_save_resume_data();
+    return m_nativeStatus.need_save_resume;
 }
 
 void TorrentImpl::saveResumeData()
@@ -737,15 +734,13 @@ QString TorrentImpl::category() const
 
 bool TorrentImpl::belongsToCategory(const QString &category) const
 {
-    if (m_category.isEmpty()) return category.isEmpty();
-    if (!Session::isValidCategoryName(category)) return false;
+    if (m_category.isEmpty())
+        return category.isEmpty();
 
-    if (m_category == category) return true;
-
-    if (m_session->isSubcategoriesEnabled() && m_category.startsWith(category + u'/'))
+    if (m_category == category)
         return true;
 
-    return false;
+    return (m_session->isSubcategoriesEnabled() && m_category.startsWith(category + u'/'));
 }
 
 TagSet TorrentImpl::tags() const
@@ -760,7 +755,7 @@ bool TorrentImpl::hasTag(const QString &tag) const
 
 bool TorrentImpl::addTag(const QString &tag)
 {
-    if (!Session::isValidTag(tag))
+    if (!m_session->isValidTag(tag))
         return false;
     if (hasTag(tag))
         return false;
@@ -860,47 +855,80 @@ bool TorrentImpl::isChecking() const
 
 bool TorrentImpl::isDownloading() const
 {
-    return m_state == TorrentState::Downloading
-            || m_state == TorrentState::DownloadingMetadata
-            || m_state == TorrentState::ForcedDownloadingMetadata
-            || m_state == TorrentState::StalledDownloading
-            || m_state == TorrentState::CheckingDownloading
-            || m_state == TorrentState::PausedDownloading
-            || m_state == TorrentState::QueuedDownloading
-            || m_state == TorrentState::ForcedDownloading;
+    switch (m_state)
+    {
+    case TorrentState::Downloading:
+    case TorrentState::DownloadingMetadata:
+    case TorrentState::ForcedDownloadingMetadata:
+    case TorrentState::StalledDownloading:
+    case TorrentState::CheckingDownloading:
+    case TorrentState::PausedDownloading:
+    case TorrentState::QueuedDownloading:
+    case TorrentState::ForcedDownloading:
+        return true;
+    default:
+        break;
+    };
+
+    return false;
 }
 
 bool TorrentImpl::isUploading() const
 {
-    return m_state == TorrentState::Uploading
-            || m_state == TorrentState::StalledUploading
-            || m_state == TorrentState::CheckingUploading
-            || m_state == TorrentState::QueuedUploading
-            || m_state == TorrentState::ForcedUploading;
+    switch (m_state)
+    {
+    case TorrentState::Uploading:
+    case TorrentState::StalledUploading:
+    case TorrentState::CheckingUploading:
+    case TorrentState::QueuedUploading:
+    case TorrentState::ForcedUploading:
+        return true;
+    default:
+        break;
+    };
+
+    return false;
 }
 
 bool TorrentImpl::isCompleted() const
 {
-    return m_state == TorrentState::Uploading
-            || m_state == TorrentState::StalledUploading
-            || m_state == TorrentState::CheckingUploading
-            || m_state == TorrentState::PausedUploading
-            || m_state == TorrentState::QueuedUploading
-            || m_state == TorrentState::ForcedUploading;
+    switch (m_state)
+    {
+    case TorrentState::Uploading:
+    case TorrentState::StalledUploading:
+    case TorrentState::CheckingUploading:
+    case TorrentState::PausedUploading:
+    case TorrentState::QueuedUploading:
+    case TorrentState::ForcedUploading:
+        return true;
+    default:
+        break;
+    };
+
+    return false;
 }
 
 bool TorrentImpl::isActive() const
 {
-    if (m_state == TorrentState::StalledDownloading)
+    switch (m_state)
+    {
+    case TorrentState::StalledDownloading:
         return (uploadPayloadRate() > 0);
 
-    return m_state == TorrentState::DownloadingMetadata
-            || m_state == TorrentState::ForcedDownloadingMetadata
-            || m_state == TorrentState::Downloading
-            || m_state == TorrentState::ForcedDownloading
-            || m_state == TorrentState::Uploading
-            || m_state == TorrentState::ForcedUploading
-            || m_state == TorrentState::Moving;
+    case TorrentState::DownloadingMetadata:
+    case TorrentState::ForcedDownloadingMetadata:
+    case TorrentState::Downloading:
+    case TorrentState::ForcedDownloading:
+    case TorrentState::Uploading:
+    case TorrentState::ForcedUploading:
+    case TorrentState::Moving:
+        return true;
+
+    default:
+        break;
+    };
+
+    return false;
 }
 
 bool TorrentImpl::isInactive() const
@@ -910,8 +938,8 @@ bool TorrentImpl::isInactive() const
 
 bool TorrentImpl::isErrored() const
 {
-    return m_state == TorrentState::MissingFiles
-            || m_state == TorrentState::Error;
+    return ((m_state == TorrentState::MissingFiles)
+            || (m_state == TorrentState::Error));
 }
 
 bool TorrentImpl::isSeed() const
@@ -967,9 +995,7 @@ void TorrentImpl::updateState()
         else
             m_state = isForced() ? TorrentState::ForcedDownloadingMetadata : TorrentState::DownloadingMetadata;
     }
-    else if ((m_nativeStatus.state == lt::torrent_status::checking_files)
-             && (!isPaused() || (m_nativeStatus.flags & lt::torrent_flags::auto_managed)
-                 || !(m_nativeStatus.flags & lt::torrent_flags::paused)))
+    else if ((m_nativeStatus.state == lt::torrent_status::checking_files) && !isPaused())
     {
         // If the torrent is not just in the "checking" state, but is being actually checked
         m_state = m_hasSeedStatus ? TorrentState::CheckingUploading : TorrentState::CheckingDownloading;
@@ -1060,7 +1086,7 @@ qlonglong TorrentImpl::eta() const
 {
     if (isPaused()) return MAX_ETA;
 
-    const SpeedSampleAvg speedAverage = m_speedMonitor.average();
+    const SpeedSampleAvg speedAverage = m_payloadRateMonitor.average();
 
     if (isSeed())
     {
@@ -1142,30 +1168,18 @@ int TorrentImpl::leechsCount() const
 
 int TorrentImpl::totalSeedsCount() const
 {
-    return (m_nativeStatus.num_complete > 0) ? m_nativeStatus.num_complete : m_nativeStatus.list_seeds;
+    return (m_nativeStatus.num_complete > -1) ? m_nativeStatus.num_complete : m_nativeStatus.list_seeds;
 }
 
 int TorrentImpl::totalPeersCount() const
 {
     const int peers = m_nativeStatus.num_complete + m_nativeStatus.num_incomplete;
-    return (peers > 0) ? peers : m_nativeStatus.list_peers;
+    return (peers > -1) ? peers : m_nativeStatus.list_peers;
 }
 
 int TorrentImpl::totalLeechersCount() const
 {
-    return (m_nativeStatus.num_incomplete > 0) ? m_nativeStatus.num_incomplete : (m_nativeStatus.list_peers - m_nativeStatus.list_seeds);
-}
-
-int TorrentImpl::completeCount() const
-{
-    // additional info: https://github.com/qbittorrent/qBittorrent/pull/5300#issuecomment-267783646
-    return m_nativeStatus.num_complete;
-}
-
-int TorrentImpl::incompleteCount() const
-{
-    // additional info: https://github.com/qbittorrent/qBittorrent/pull/5300#issuecomment-267783646
-    return m_nativeStatus.num_incomplete;
+    return (m_nativeStatus.num_incomplete > -1) ? m_nativeStatus.num_incomplete : (m_nativeStatus.list_peers - m_nativeStatus.list_seeds);
 }
 
 QDateTime TorrentImpl::lastSeenComplete() const
@@ -1209,12 +1223,12 @@ qlonglong TorrentImpl::timeSinceActivity() const
 
 int TorrentImpl::downloadLimit() const
 {
-    return m_nativeHandle.download_limit();
+    return m_downloadLimit;;
 }
 
 int TorrentImpl::uploadLimit() const
 {
-    return m_nativeHandle.upload_limit();
+    return m_uploadLimit;
 }
 
 bool TorrentImpl::superSeeding() const
@@ -1318,12 +1332,14 @@ qreal TorrentImpl::realRatio() const
 
 int TorrentImpl::uploadPayloadRate() const
 {
-    return m_nativeStatus.upload_payload_rate;
+    // workaround: suppress the speed for paused state
+    return isPaused() ? 0 : m_nativeStatus.upload_payload_rate;
 }
 
 int TorrentImpl::downloadPayloadRate() const
 {
-    return m_nativeStatus.download_payload_rate;
+    // workaround: suppress the speed for paused state
+    return isPaused() ? 0 : m_nativeStatus.download_payload_rate;
 }
 
 qlonglong TorrentImpl::totalPayloadUpload() const
@@ -1407,8 +1423,8 @@ void TorrentImpl::forceRecheck()
     if (isPaused())
     {
         // When "force recheck" is applied on paused torrent, we temporarily resume it
-        // (really we just allow libtorrent to resume it by enabling auto management for it).
-        m_nativeHandle.set_flags(lt::torrent_flags::stop_when_ready | lt::torrent_flags::auto_managed);
+        resume();
+        setStopCondition(StopCondition::FilesChecked);
     }
 }
 
@@ -1541,9 +1557,8 @@ void TorrentImpl::endReceivedMetadataHandling(const Path &savePath, const PathLi
     m_torrentInfo = TorrentInfo(*metadata);
     m_filePriorities.reserve(filesCount());
     const auto nativeIndexes = m_torrentInfo.nativeIndexes();
-    const std::vector<lt::download_priority_t> filePriorities =
-            resized(p.file_priorities, metadata->files().num_files()
-                    , LT::toNative(p.file_priorities.empty() ? DownloadPriority::Normal : DownloadPriority::Ignored));
+    p.file_priorities = resized(p.file_priorities, metadata->files().num_files()
+                                , LT::toNative(p.file_priorities.empty() ? DownloadPriority::Normal : DownloadPriority::Ignored));
 
     m_completedFiles.fill(static_cast<bool>(p.flags & lt::torrent_flags::seed_mode), filesCount());
 
@@ -1551,17 +1566,31 @@ void TorrentImpl::endReceivedMetadataHandling(const Path &savePath, const PathLi
     {
         const auto nativeIndex = nativeIndexes.at(i);
 
-        const Path filePath = fileNames.at(i);
-        p.renamed_files[nativeIndex] = filePath.toString().toStdString();
+        const Path actualFilePath = fileNames.at(i);
+        p.renamed_files[nativeIndex] = actualFilePath.toString().toStdString();
 
-        m_filePaths.append(filePath.removedExtension(QB_EXT));
+        const Path filePath = actualFilePath.removedExtension(QB_EXT);
+        m_filePaths.append(filePath);
 
-        const auto priority = LT::fromNative(filePriorities[LT::toUnderlyingType(nativeIndex)]);
+        lt::download_priority_t &nativePriority = p.file_priorities[LT::toUnderlyingType(nativeIndex)];
+        if ((nativePriority != lt::dont_download) && m_session->isFilenameExcluded(filePath.filename()))
+            nativePriority = lt::dont_download;
+        const auto priority = LT::fromNative(nativePriority);
         m_filePriorities.append(priority);
     }
     p.save_path = savePath.toString().toStdString();
     p.ti = metadata;
-    p.file_priorities = filePriorities;
+
+    if (stopCondition() == StopCondition::MetadataReceived)
+    {
+        m_stopCondition = StopCondition::None;
+
+        m_isStopped = true;
+        p.flags |= lt::torrent_flags::paused;
+        p.flags &= ~lt::torrent_flags::auto_managed;
+
+        m_session->handleTorrentPaused(this);
+    }
 
     reload();
 
@@ -1604,11 +1633,16 @@ void TorrentImpl::reload()
         p.flags &= ~(lt::torrent_flags::auto_managed | lt::torrent_flags::paused);
     }
 
+    auto *const extensionData = new ExtensionData;
+    p.userdata = LTClientData(extensionData);
     m_nativeHandle = m_nativeSession->add_torrent(p);
+
+    m_nativeStatus = extensionData->status;
+
     if (queuePos >= lt::queue_position_t {})
         m_nativeHandle.queue_position_set(queuePos);
+    m_nativeStatus.queue_position = queuePos;
 
-    initializeStatus(m_nativeStatus, m_ltAddTorrentParams);
     updateState();
 }
 
@@ -1616,6 +1650,7 @@ void TorrentImpl::pause()
 {
     if (!m_isStopped)
     {
+        m_stopCondition = StopCondition::None;
         m_isStopped = true;
         m_session->handleTorrentNeedSaveResumeData(this);
         m_session->handleTorrentPaused(this);
@@ -1626,7 +1661,7 @@ void TorrentImpl::pause()
         setAutoManaged(false);
         m_nativeHandle.pause();
 
-        m_speedMonitor.reset();
+        m_payloadRateMonitor.reset();
     }
 }
 
@@ -1651,10 +1686,6 @@ void TorrentImpl::resume(const TorrentOperatingMode mode)
 
     if (m_isStopped)
     {
-        // Torrent may have been temporarily resumed to perform checking files
-        // so we have to ensure it will not pause after checking is done.
-        m_nativeHandle.unset_flags(lt::torrent_flags::stop_when_ready);
-
         m_isStopped = false;
         m_session->handleTorrentNeedSaveResumeData(this);
         m_session->handleTorrentResumed(this);
@@ -1670,6 +1701,12 @@ void TorrentImpl::resume(const TorrentOperatingMode mode)
 
 void TorrentImpl::moveStorage(const Path &newPath, const MoveStorageMode mode)
 {
+    if (!hasMetadata())
+    {
+        m_session->handleTorrentSavePathChanged(this);
+        return;
+    }
+
     if (m_session->addMoveTorrentStorageJob(this, newPath, mode))
     {
         m_storageIsMoving = true;
@@ -1727,12 +1764,12 @@ void TorrentImpl::handleTorrentCheckedAlert(const lt::torrent_checked_alert *p)
         return;
     }
 
+    if (stopCondition() == StopCondition::FilesChecked)
+        pause();
+
     m_statusUpdatedTriggers.enqueue([this]()
     {
         qDebug("\"%s\" have just finished checking.", qUtf8Printable(name()));
-
-        if (m_nativeStatus.need_save_resume)
-            m_session->handleTorrentNeedSaveResumeData(this);
 
         if (!m_hasMissingFiles)
         {
@@ -1743,7 +1780,19 @@ void TorrentImpl::handleTorrentCheckedAlert(const lt::torrent_checked_alert *p)
 
             adjustStorageLocation();
             manageIncompleteFiles();
+
+            if (!isPaused())
+            {
+                // torrent is internally paused using NativeTorrentExtension after files checked
+                // so we need to resume it if there is no corresponding "stop condition" set
+                setAutoManaged(m_operatingMode == TorrentOperatingMode::AutoManaged);
+                if (m_operatingMode == TorrentOperatingMode::Forced)
+                    m_nativeHandle.resume();
+            }
         }
+
+        if (m_nativeStatus.need_save_resume)
+            m_session->handleTorrentNeedSaveResumeData(this);
 
         m_session->handleTorrentChecked(this);
     });
@@ -1752,10 +1801,10 @@ void TorrentImpl::handleTorrentCheckedAlert(const lt::torrent_checked_alert *p)
 void TorrentImpl::handleTorrentFinishedAlert(const lt::torrent_finished_alert *p)
 {
     Q_UNUSED(p);
-    qDebug("Got a torrent finished alert for \"%s\"", qUtf8Printable(name()));
-    qDebug("Torrent has seed status: %s", m_hasSeedStatus ? "yes" : "no");
+
     m_hasMissingFiles = false;
-    if (m_hasSeedStatus) return;
+    if (m_hasSeedStatus)
+        return;
 
     m_statusUpdatedTriggers.enqueue([this]()
     {
@@ -1880,6 +1929,7 @@ void TorrentImpl::prepareResumeData(const lt::add_torrent_params &params)
     resumeData.firstLastPiecePriority = m_hasFirstLastPiecePriority;
     resumeData.hasSeedStatus = m_hasSeedStatus;
     resumeData.stopped = m_isStopped;
+    resumeData.stopCondition = m_stopCondition;
     resumeData.operatingMode = m_operatingMode;
     resumeData.ltAddTorrentParams = m_ltAddTorrentParams;
     resumeData.useAutoTMM = m_useAutoTMM;
@@ -1986,8 +2036,7 @@ void TorrentImpl::handleFileErrorAlert(const lt::file_error_alert *p)
 #ifdef QBT_USES_LIBTORRENT2
 void TorrentImpl::handleFilePrioAlert(const lt::file_prio_alert *)
 {
-    if (m_nativeHandle.need_save_resume_data())
-        m_session->handleTorrentNeedSaveResumeData(this);
+    m_session->handleTorrentNeedSaveResumeData(this);
 }
 #endif
 
@@ -1995,6 +2044,13 @@ void TorrentImpl::handleMetadataReceivedAlert(const lt::metadata_received_alert 
 {
     Q_UNUSED(p);
     qDebug("Metadata received for torrent %s.", qUtf8Printable(name()));
+
+#ifdef QBT_USES_LIBTORRENT2
+    const InfoHash prevInfoHash = infoHash();
+    m_infoHash = InfoHash(m_nativeHandle.info_hashes());
+    if (prevInfoHash != infoHash())
+        m_session->handleTorrentInfoHashChanged(this, prevInfoHash);
+#endif
 
     m_maintenanceJob = MaintenanceJob::HandleMetadata;
     m_session->handleTorrentNeedSaveResumeData(this);
@@ -2118,6 +2174,41 @@ lt::torrent_handle TorrentImpl::nativeHandle() const
     return m_nativeHandle;
 }
 
+bool TorrentImpl::setMetadata(const TorrentInfo &torrentInfo)
+{
+    if (hasMetadata())
+        return false;
+
+#ifdef QBT_USES_LIBTORRENT2
+    return m_nativeHandle.set_metadata(torrentInfo.nativeInfo()->info_section());
+#else
+    const std::shared_ptr<lt::torrent_info> nativeInfo = torrentInfo.nativeInfo();
+    return m_nativeHandle.set_metadata(lt::span<const char>(nativeInfo->metadata().get(), nativeInfo->metadata_size()));
+#endif
+}
+
+Torrent::StopCondition TorrentImpl::stopCondition() const
+{
+    return m_stopCondition;
+}
+
+void TorrentImpl::setStopCondition(const StopCondition stopCondition)
+{
+    if (stopCondition == m_stopCondition)
+        return;
+
+    if (isPaused())
+        return;
+
+    if ((stopCondition == StopCondition::MetadataReceived) && hasMetadata())
+        return;
+
+    if ((stopCondition == StopCondition::FilesChecked) && hasMetadata() && !isChecking())
+        return;
+
+    m_stopCondition = stopCondition;
+}
+
 bool TorrentImpl::isMoveInProgress() const
 {
     return m_storageIsMoving;
@@ -2129,7 +2220,7 @@ void TorrentImpl::updateStatus(const lt::torrent_status &nativeStatus)
     m_nativeStatus = nativeStatus;
     updateState();
 
-    m_speedMonitor.addSample({nativeStatus.download_payload_rate
+    m_payloadRateMonitor.addSample({nativeStatus.download_payload_rate
                               , nativeStatus.upload_payload_rate});
 
     if (hasMetadata())
@@ -2178,19 +2269,23 @@ void TorrentImpl::setSeedingTimeLimit(int limit)
 
 void TorrentImpl::setUploadLimit(const int limit)
 {
-    if (limit == uploadLimit())
+    const int cleanValue = cleanLimitValue(limit);
+    if (cleanValue == uploadLimit())
         return;
 
-    m_nativeHandle.set_upload_limit(limit);
+    m_uploadLimit = cleanValue;
+    m_nativeHandle.set_upload_limit(m_uploadLimit);
     m_session->handleTorrentNeedSaveResumeData(this);
 }
 
 void TorrentImpl::setDownloadLimit(const int limit)
 {
-    if (limit == downloadLimit())
+    const int cleanValue = cleanLimitValue(limit);
+    if (cleanValue == downloadLimit())
         return;
 
-    m_nativeHandle.set_download_limit(limit);
+    m_downloadLimit = cleanValue;
+    m_nativeHandle.set_download_limit(m_downloadLimit);
     m_session->handleTorrentNeedSaveResumeData(this);
 }
 

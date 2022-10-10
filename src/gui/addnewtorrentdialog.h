@@ -53,6 +53,7 @@ namespace Ui
     class AddNewTorrentDialog;
 }
 
+class LineEdit;
 class PropListDelegate;
 class TorrentContentFilterModel;
 class TorrentFileGuard;
@@ -92,6 +93,7 @@ private slots:
     void contentLayoutChanged();
     void doNotDeleteTorrentClicked(bool checked);
     void renameSelectedFile();
+    void handleFilterTextChanged(const QString &filter);
 
     void accept() override;
     void reject() override;
@@ -113,7 +115,7 @@ private:
 
     void showEvent(QShowEvent *event) override;
 
-    Ui::AddNewTorrentDialog *m_ui;
+    Ui::AddNewTorrentDialog *m_ui = nullptr;
     TorrentContentFilterModel *m_contentModel = nullptr;
     PropListDelegate *m_contentDelegate = nullptr;
     BitTorrent::MagnetUri m_magnetURI;
@@ -123,6 +125,7 @@ private:
     int m_savePathIndex = -1;
     int m_downloadPathIndex = -1;
     bool m_useDownloadPath = false;
+    LineEdit *m_filterLine = nullptr;
     std::unique_ptr<TorrentFileGuard> m_torrentGuard;
     BitTorrent::AddTorrentParams m_torrentParams;
 
