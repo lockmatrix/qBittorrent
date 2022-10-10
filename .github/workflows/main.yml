@@ -85,5 +85,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ubuntu-20.04-x64-v4.4-libtorrent_myv1
+          name: ubuntu-20.04-x64-v4.5-libtorrent_myv1
           path: upload
